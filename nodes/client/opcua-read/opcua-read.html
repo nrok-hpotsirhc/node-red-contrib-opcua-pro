@@ -8,8 +8,7 @@
       defaults: {
         name:       { value: '' },
         connection: { value: '', type: 'opcua-client-config', required: true },
-        nodeId:     { value: '' },
-        datatype:   { value: 'Double' }
+        nodeId:     { value: '' }
       },
       inputs:  1,
       outputs: 1,
@@ -35,20 +34,6 @@
   <div class="form-row">
     <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
     <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)">
-  </div>
-  <div class="form-row">
-    <label for="node-input-datatype"><i class="fa fa-cube"></i> Data Type</label>
-    <select id="node-input-datatype" style="width:70%">
-      <option value="Boolean">Boolean</option>
-      <option value="Int16">Int16</option>
-      <option value="UInt16">UInt16</option>
-      <option value="Int32">Int32</option>
-      <option value="UInt32">UInt32</option>
-      <option value="Float">Float</option>
-      <option value="Double" selected>Double</option>
-      <option value="String">String</option>
-      <option value="DateTime">DateTime</option>
-    </select>
   </div>
 </script>
 

@@ -33,12 +33,13 @@ describe('Client Reconnect (Integration)', () => {
     let mockServer = await createMockServer(TEST_PORT);
 
     // Create client with aggressive reconnect settings for testing
+    /* TEST DATA — aggressive reconnect settings for fast test execution */
     const client = OPCUAClient.create({
-      applicationName:    'ReconnectTest', // TEST DATA — test client name
+      applicationName:    'ReconnectTest',
       connectionStrategy: {
-        initialDelay: 200,       // TEST DATA — fast reconnect for testing
-        maxDelay:     1000,      // TEST DATA
-        maxRetry:     10,        // TEST DATA
+        initialDelay: 200,
+        maxDelay:     1000,
+        maxRetry:     10,
         randomisationFactor: 0
       },
       securityMode:   MessageSecurityMode.None,
@@ -105,12 +106,13 @@ describe('Client Reconnect (Integration)', () => {
 
     let mockServer = await createMockServer(TEST_PORT);
 
+    /* TEST DATA — aggressive reconnect settings for fast test execution */
     const client = OPCUAClient.create({
-      applicationName:    'SubReconnectTest', // TEST DATA
+      applicationName:    'SubReconnectTest',
       connectionStrategy: {
-        initialDelay: 200,     // TEST DATA
-        maxDelay:     1000,    // TEST DATA
-        maxRetry:     10,      // TEST DATA
+        initialDelay: 200,
+        maxDelay:     1000,
+        maxRetry:     10,
         randomisationFactor: 0
       },
       securityMode:   MessageSecurityMode.None,

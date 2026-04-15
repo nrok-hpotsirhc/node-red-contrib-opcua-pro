@@ -38,7 +38,7 @@ module.exports = function (RED) {
     function onStateChange(state) {
       if (state === 'SESSION_ACTIVE') {
         // Auto-subscribe when session becomes active — setupSubscription sets its own status
-        setupSubscription();
+        setupSubscription().catch(err => node.error(`Subscription setup failed: ${err.message}`));
         return;
       }
       node.status(STATUS_MAP[state] || { fill: 'grey', shape: 'ring', text: state });
@@ -52,7 +52,7 @@ module.exports = function (RED) {
         node.subscription = null;
         node.monitoredItem = null;
         if (node.configNode.fsm.state === 'SESSION_ACTIVE') {
-          setupSubscription();
+          setupSubscription().catch(err => node.error(`Subscription recreation failed: ${err.message}`));
         }
       }
     }
@@ -133,7 +133,7 @@ module.exports = function (RED) {
 
     // If session is already active on deploy, subscribe immediately
     if (node.configNode.fsm.state === 'SESSION_ACTIVE') {
-      setupSubscription();
+      setupSubscription().catch(err => node.error(`Subscription setup failed: ${err.message}`));
     } else {
       onStateChange(node.configNode.fsm.state);
     }
