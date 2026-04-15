@@ -43,8 +43,12 @@ module.exports = function (RED) {
       setupFolder(node.serverConfig.addressSpace);
     }
 
-    node.on('close', (_removed, done) => {
+    node.on('close', (removed, done) => {
       node.serverConfig.removeListener('addressSpaceReady', setupFolder);
+      if (removed && node.folder?.dispose) {
+        node.folder.dispose();
+        node.folder = null;
+      }
       done();
     });
   }

@@ -6,6 +6,13 @@
 const { createVariableBinding } = require('../../../lib/server/context-bridge');
 
 module.exports = function (RED) {
+  function resolveParentNode(config, addressSpace) {
+    const parentFolderNode = config.parentFolder ? RED.nodes.getNode(config.parentFolder) : null;
+    return parentFolderNode?.folder
+      || (config.parentNodeId ? addressSpace.findNode(config.parentNodeId) : null)
+      || addressSpace.rootFolder.objects;
+  }
+
   function OpcuaVariable(config) {
     RED.nodes.createNode(this, config);
     const node = this;
@@ -19,10 +26,7 @@ module.exports = function (RED) {
 
     const setupVariable = (addressSpace) => {
       try {
-        const parentFolderNode = config.parentFolder ? RED.nodes.getNode(config.parentFolder) : null;
-        const parentNode = parentFolderNode?.folder
-          || (config.parentNodeId ? addressSpace.findNode(config.parentNodeId) : null)
-          || addressSpace.rootFolder.objects;
+        const parentNode = resolveParentNode(config, addressSpace);
 
         const contextScope = config.contextScope === 'global' ? 'global' : 'flow';
         const contextStore = config.contextStore || undefined;
@@ -59,8 +63,12 @@ module.exports = function (RED) {
       setupVariable(node.serverConfig.addressSpace);
     }
 
-    node.on('close', (_removed, done) => {
+    node.on('close', (removed, done) => {
       node.serverConfig.removeListener('addressSpaceReady', setupVariable);
+      if (removed && node.variable?.dispose) {
+        node.variable.dispose();
+        node.variable = null;
+      }
       done();
     });
   }
