@@ -60,28 +60,40 @@ describe('opcua-server-config lifecycle', () => {
       start:      sinon.stub().resolves(),
       shutdown:   shutdownStub,
       on(evt, cb) {
-        if (evt === 'post_initialize') cb();
+        if (evt === 'post_initialize') setImmediate(cb);
         return this;
       },
       engine: { addressSpace: {} }
     };
 
-    // Stub OPCUAServer constructor
-    const opcua = require('node-opcua');
-    sinon.stub(opcua, 'OPCUAServer').returns(serverStub);
+    // opcua-server-config.js captures OPCUAServer at require time, so we
+    // need to inject our mock through the module cache before re-requiring.
+    const opcuaPath = require.resolve('node-opcua');
+    const originalOpcua = require.cache[opcuaPath];
+    require.cache[opcuaPath] = {
+      id: opcuaPath,
+      filename: opcuaPath,
+      loaded: true,
+      exports: { ...require('node-opcua'), OPCUAServer: function () { return serverStub; } }
+    };
+
+    // Re-require so the fresh module picks up our mock OPCUAServer
+    delete require.cache[require.resolve('./opcua-server-config')];
+    require('./opcua-server-config')(RED);
+    const MockedServerConfig = RED.nodes.getType('opcua-server-config');
+
+    // Restore the node-opcua cache entry immediately
+    require.cache[opcuaPath] = originalOpcua;
 
     const node = Object.create(EventEmitter.prototype);
     EventEmitter.call(node);
     RED.nodes.createNode(node, { id: 'srv1' });
 
-    // Instantiate — passes config object directly
-    await new Promise(resolve => {
-      node.once('addressSpaceReady', resolve);
-      new ServerConfig.call
-        ? ServerConfig.call(node, { port: '4840', resourcePath: '/UA', productName: 'Test' })
-        : null;
-      setTimeout(resolve, 50);
-    });
+    // Instantiate
+    MockedServerConfig.call(node, { port: '4840', resourcePath: '/UA', productName: 'Test' });
+
+    // Wait for the post_initialize event to fire
+    await new Promise(resolve => setTimeout(resolve, 50));
 
     // Trigger close
     await new Promise(resolve => {
@@ -91,25 +103,43 @@ describe('opcua-server-config lifecycle', () => {
     assert.ok(shutdownStub.calledOnce, 'shutdown() must be called on close');
   });
 
-  it('logs error on start failure, does not throw', done => {
-    const opcua = require('node-opcua');
-    sinon.stub(opcua, 'OPCUAServer').returns({
-      initialize: sinon.stub().rejects(new Error('EADDRINUSE')),
-      start:      sinon.stub(),
-      on:         sinon.stub().returnsThis(),
-      engine:     { addressSpace: {} }
-    });
+  it('logs error on start failure, does not throw', async () => {
+    const opcuaPath = require.resolve('node-opcua');
+    const originalOpcua = require.cache[opcuaPath];
+    require.cache[opcuaPath] = {
+      id: opcuaPath,
+      filename: opcuaPath,
+      loaded: true,
+      exports: {
+        ...require('node-opcua'),
+        OPCUAServer: function () {
+          return {
+            initialize: sinon.stub().rejects(new Error('EADDRINUSE')),
+            start:      sinon.stub(),
+            on:         sinon.stub().returnsThis(),
+            engine:     { addressSpace: {} }
+          };
+        }
+      }
+    };
+
+    delete require.cache[require.resolve('./opcua-server-config')];
+    require('./opcua-server-config')(RED);
+    const MockedServerConfig = RED.nodes.getType('opcua-server-config');
+    require.cache[opcuaPath] = originalOpcua;
+
+    const nodeEvt = Object.create(EventEmitter.prototype);
+    EventEmitter.call(nodeEvt);
+    RED.nodes.createNode(nodeEvt, { id: 'srv2' });
 
     // Should not throw — error is caught internally
-    try {
-      const nodeEvt = Object.create(EventEmitter.prototype);
-      EventEmitter.call(nodeEvt);
-      RED.nodes.createNode(nodeEvt, { id: 'srv2' });
-      // Call the config constructor bound to nodeEvt would require proper injection;
-      // This test verifies the error path is reachable via start-catch handler.
-      done();
-    } catch (e) {
-      done(e);
-    }
+    MockedServerConfig.call(nodeEvt, { port: '4840', resourcePath: '/UA', productName: 'Test' });
+
+    // Wait for the async startServer() to complete (and fail internally)
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+    assert.ok(nodeEvt.error.calledOnce, 'node.error() must be called on start failure');
+    assert.ok(nodeEvt.error.firstCall.args[0].includes('EADDRINUSE'),
+      'error message must contain the original error');
   });
 });
