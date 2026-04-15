@@ -3,10 +3,13 @@
 // See: docs/work-packages.md#wp-s-2-address-space-builder--context-bridge
 // See: docs/theoretical-foundations.md#context-mapping-die-bidirektionale-datenbrücke
 
+const { createVariableBinding } = require('../../../lib/server/context-bridge');
+
 module.exports = function (RED) {
   function OpcuaVariable(config) {
     RED.nodes.createNode(this, config);
     const node = this;
+    node.variable = null;
 
     node.serverConfig = RED.nodes.getNode(config.server);
     if (!node.serverConfig) {
@@ -14,29 +17,52 @@ module.exports = function (RED) {
       return;
     }
 
-    node.serverConfig.on('addressSpaceReady', (addressSpace) => {
+    const setupVariable = (addressSpace) => {
       try {
-        // TODO WP-S-2: Implement context bridge
-        // namespace.addVariable({
-        //   componentOf: parentNode,
-        //   browseName:  config.browseName,
-        //   dataType:    config.dataType,
-        //   value: {
-        //     get: () => new Variant({ dataType: ..., value: node.context().flow.get(config.contextKey) }),
-        //     set: (variant) => {
-        //       node.context().flow.set(config.contextKey, variant.value);
-        //       if (config.triggerOnWrite) node.send({ payload: variant.value });
-        //       return StatusCodes.Good;
-        //     }
-        //   }
-        // });
+        const parentFolderNode = config.parentFolder ? RED.nodes.getNode(config.parentFolder) : null;
+        const parentNode = parentFolderNode?.folder
+          || (config.parentNodeId ? addressSpace.findNode(config.parentNodeId) : null)
+          || addressSpace.rootFolder.objects;
+
+        const contextScope = config.contextScope === 'global' ? 'global' : 'flow';
+        const contextStore = config.contextStore || undefined;
+        const nodeContext = node.context();
+        const contextApi = contextScope === 'global' ? nodeContext.global : nodeContext.flow;
+
+        const flowContext = {
+          get: (key) => contextApi.get(key, contextStore),
+          set: (key, value) => contextApi.set(key, value, contextStore)
+        };
+
+        node.variable = createVariableBinding(
+          addressSpace.getOwnNamespace(),
+          parentNode,
+          {
+            browseName: config.browseName || node.name || 'Variable',
+            dataType: config.dataType || 'Double',
+            contextKey: config.contextKey,
+            defaultValue: config.defaultValue,
+            triggerOnWrite: Boolean(config.triggerOnWrite),
+            nodeId: config.nodeId
+          },
+          flowContext,
+          node
+        );
         node.status({ fill: 'green', shape: 'dot', text: config.browseName });
       } catch (err) {
         node.error(`Failed to create variable: ${err.message}`);
       }
-    });
+    };
 
-    node.on('close', (_removed, done) => done());
+    node.serverConfig.on('addressSpaceReady', setupVariable);
+    if (node.serverConfig.addressSpace) {
+      setupVariable(node.serverConfig.addressSpace);
+    }
+
+    node.on('close', (_removed, done) => {
+      node.serverConfig.removeListener('addressSpaceReady', setupVariable);
+      done();
+    });
   }
 
   RED.nodes.registerType('opcua-variable', OpcuaVariable);

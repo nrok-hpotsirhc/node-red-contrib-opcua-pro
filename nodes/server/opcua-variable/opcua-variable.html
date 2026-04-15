@@ -1,0 +1,111 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-variable', {
+      category: 'OPC UA',
+      color: '#FDD0A2',
+      defaults: {
+        name: { value: '' },
+        server: { value: '', type: 'opcua-server-config', required: true },
+        browseName: { value: '', required: true },
+        nodeId: { value: '' },
+        parentFolder: { value: '', type: 'opcua-folder' },
+        parentNodeId: { value: '' },
+        dataType: { value: 'Double', required: true },
+        contextScope: { value: 'flow', required: true },
+        contextStore: { value: '' },
+        contextKey: { value: '', required: true },
+        defaultValue: { value: '' },
+        triggerOnWrite: { value: false }
+      },
+      inputs: 0,
+      outputs: 1,
+      icon: 'font-awesome/fa-sliders',
+      label: function() {
+        return this.name || this.browseName || 'opcua variable';
+      },
+      paletteLabel: 'opcua variable',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-variable">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-server"><i class="fa fa-server"></i> Server</label>
+    <input type="text" id="node-input-server">
+  </div>
+  <div class="form-row">
+    <label for="node-input-browseName"><i class="fa fa-font"></i> Browse Name</label>
+    <input type="text" id="node-input-browseName" placeholder="Temperature">
+  </div>
+  <div class="form-row">
+    <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
+    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-parentFolder"><i class="fa fa-sitemap"></i> Parent Folder</label>
+    <input type="text" id="node-input-parentFolder" placeholder="Optional">
+  </div>
+  <div class="form-row">
+    <label for="node-input-parentNodeId"><i class="fa fa-link"></i> Parent NodeId</label>
+    <input type="text" id="node-input-parentNodeId" placeholder="Defaults to Objects folder">
+  </div>
+  <div class="form-row">
+    <label for="node-input-dataType"><i class="fa fa-list"></i> Data Type</label>
+    <select id="node-input-dataType">
+      <option value="Boolean">Boolean</option>
+      <option value="Double">Double</option>
+      <option value="Float">Float</option>
+      <option value="Int16">Int16</option>
+      <option value="Int32">Int32</option>
+      <option value="Int64">Int64</option>
+      <option value="UInt16">UInt16</option>
+      <option value="UInt32">UInt32</option>
+      <option value="String">String</option>
+      <option value="DateTime">DateTime</option>
+      <option value="ByteString">ByteString</option>
+      <option value="NodeId">NodeId</option>
+      <option value="Variant">Variant</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-contextScope"><i class="fa fa-database"></i> Context Scope</label>
+    <select id="node-input-contextScope">
+      <option value="flow">flow</option>
+      <option value="global">global</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-contextStore"><i class="fa fa-archive"></i> Context Store</label>
+    <input type="text" id="node-input-contextStore" placeholder="default">
+  </div>
+  <div class="form-row">
+    <label for="node-input-contextKey"><i class="fa fa-key"></i> Context Key</label>
+    <input type="text" id="node-input-contextKey" placeholder="temperature.value">
+  </div>
+  <div class="form-row">
+    <label for="node-input-defaultValue"><i class="fa fa-undo"></i> Default Value</label>
+    <input type="text" id="node-input-defaultValue" placeholder="Used if context key is unset">
+  </div>
+  <div class="form-row">
+    <label for="node-input-triggerOnWrite"><i class="fa fa-bolt"></i> Trigger on Write</label>
+    <input type="checkbox" id="node-input-triggerOnWrite" style="display:inline-block; width:auto; vertical-align:top;">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-variable">
+  <p>Creates an OPC UA variable that is bidirectionally bound to Node-RED context.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>Value written by OPC UA clients when <code>Trigger on Write</code> is enabled.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>Reads map to <code>flow/global.get(contextKey)</code>. Writes update context and optionally emit a message into the flow.</p>
+</script>

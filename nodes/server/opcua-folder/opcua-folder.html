@@ -1,0 +1,59 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-folder', {
+      category: 'OPC UA',
+      color: '#C7E9C0',
+      defaults: {
+        name: { value: '' },
+        server: { value: '', type: 'opcua-server-config', required: true },
+        browseName: { value: '', required: true },
+        nodeId: { value: '' },
+        parentNodeId: { value: '' },
+        parentFolder: { value: '', type: 'opcua-folder' }
+      },
+      inputs: 0,
+      outputs: 0,
+      icon: 'font-awesome/fa-folder',
+      label: function() {
+        return this.name || this.browseName || 'opcua folder';
+      },
+      paletteLabel: 'opcua folder',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-folder">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-server"><i class="fa fa-server"></i> Server</label>
+    <input type="text" id="node-input-server">
+  </div>
+  <div class="form-row">
+    <label for="node-input-browseName"><i class="fa fa-font"></i> Browse Name</label>
+    <input type="text" id="node-input-browseName" placeholder="Machines">
+  </div>
+  <div class="form-row">
+    <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
+    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Machines (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-parentFolder"><i class="fa fa-sitemap"></i> Parent Folder</label>
+    <input type="text" id="node-input-parentFolder" placeholder="Optional">
+  </div>
+  <div class="form-row">
+    <label for="node-input-parentNodeId"><i class="fa fa-link"></i> Parent NodeId</label>
+    <input type="text" id="node-input-parentNodeId" placeholder="Defaults to Objects folder">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-folder">
+  <p>Creates a folder in the OPC UA server address space.</p>
+  <h3>Details</h3>
+  <p>The folder is created when the configured OPC UA server reports <code>addressSpaceReady</code>. Parent can be another <code>opcua-folder</code> node or a direct parent NodeId.</p>
+</script>

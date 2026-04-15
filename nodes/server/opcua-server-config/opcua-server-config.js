@@ -4,6 +4,7 @@
 // See: docs/theoretical-foundations.md#10-node-red-architektur-und-low-code-paradigma
 
 const { OPCUAServer } = require('node-opcua');
+const { importNodeSets } = require('../../../lib/server/nodeset-importer');
 
 module.exports = function (RED) {
   function OpcuaServerConfig(config) {
@@ -12,6 +13,14 @@ module.exports = function (RED) {
 
     node.server       = null;
     node.addressSpace = null;
+
+    function parseNodeSetPaths(rawNodeSets) {
+      if (!rawNodeSets || typeof rawNodeSets !== 'string') return [];
+      return rawNodeSets
+        .split(',')
+        .map(p => p.trim())
+        .filter(Boolean);
+    }
 
     async function startServer() {
       node.server = new OPCUAServer({
@@ -22,16 +31,13 @@ module.exports = function (RED) {
         }
       });
 
-      node.server.on('post_initialize', () => {
-        node.addressSpace = node.server.engine.addressSpace;
-        // Signal to address-space-builder nodes (WP-S-2)
-        node.emit('addressSpaceReady', node.addressSpace);
-      });
-
-      // TODO WP-S-3: Load NodeSet2.xml files here (before server.start())
       // TODO WP-S-5: Configure PKI / security policies
-
       await node.server.initialize();
+      node.addressSpace = node.server.engine.addressSpace;
+      await importNodeSets(node.addressSpace, parseNodeSetPaths(config.nodeSets));
+      // Signal to address-space-builder nodes (WP-S-2)
+      node.emit('addressSpaceReady', node.addressSpace);
+      // TODO WP-S-5: Configure PKI / security policies
       await node.server.start();
       node.status({ fill: 'green', shape: 'dot', text: `Port ${config.port || 4840}: Active` });
     }
