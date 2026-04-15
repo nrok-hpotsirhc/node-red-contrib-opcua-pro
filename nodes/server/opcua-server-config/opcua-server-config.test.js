@@ -53,6 +53,28 @@ describe('opcua-server-config lifecycle', () => {
     assert.ok(typeof ServerConfig === 'function');
   });
 
+  // ─── Helper: inject a mock OPCUAServer via require.cache ──────────────────
+  // opcua-server-config.js captures OPCUAServer at require time, so we must
+  // inject the mock through the module cache before re-requiring the module.
+  function requireWithMockServer(serverFactory) {
+    const opcuaPath = require.resolve('node-opcua');
+    const originalOpcua = require.cache[opcuaPath];
+    require.cache[opcuaPath] = {
+      id: opcuaPath,
+      filename: opcuaPath,
+      loaded: true,
+      exports: { ...require('node-opcua'), OPCUAServer: serverFactory }
+    };
+
+    delete require.cache[require.resolve('./opcua-server-config')];
+    require('./opcua-server-config')(RED);
+    const MockedConfig = RED.nodes.getType('opcua-server-config');
+
+    // Restore the node-opcua cache entry immediately
+    require.cache[opcuaPath] = originalOpcua;
+    return MockedConfig;
+  }
+
   it('calls server.shutdown() on close to release TCP port', async () => {
     const shutdownStub = sinon.stub().resolves();
     const serverStub = {
@@ -66,24 +88,7 @@ describe('opcua-server-config lifecycle', () => {
       engine: { addressSpace: {} }
     };
 
-    // opcua-server-config.js captures OPCUAServer at require time, so we
-    // need to inject our mock through the module cache before re-requiring.
-    const opcuaPath = require.resolve('node-opcua');
-    const originalOpcua = require.cache[opcuaPath];
-    require.cache[opcuaPath] = {
-      id: opcuaPath,
-      filename: opcuaPath,
-      loaded: true,
-      exports: { ...require('node-opcua'), OPCUAServer: function () { return serverStub; } }
-    };
-
-    // Re-require so the fresh module picks up our mock OPCUAServer
-    delete require.cache[require.resolve('./opcua-server-config')];
-    require('./opcua-server-config')(RED);
-    const MockedServerConfig = RED.nodes.getType('opcua-server-config');
-
-    // Restore the node-opcua cache entry immediately
-    require.cache[opcuaPath] = originalOpcua;
+    const MockedServerConfig = requireWithMockServer(function () { return serverStub; });
 
     const node = Object.create(EventEmitter.prototype);
     EventEmitter.call(node);
@@ -104,29 +109,14 @@ describe('opcua-server-config lifecycle', () => {
   });
 
   it('logs error on start failure, does not throw', async () => {
-    const opcuaPath = require.resolve('node-opcua');
-    const originalOpcua = require.cache[opcuaPath];
-    require.cache[opcuaPath] = {
-      id: opcuaPath,
-      filename: opcuaPath,
-      loaded: true,
-      exports: {
-        ...require('node-opcua'),
-        OPCUAServer: function () {
-          return {
-            initialize: sinon.stub().rejects(new Error('EADDRINUSE')),
-            start:      sinon.stub(),
-            on:         sinon.stub().returnsThis(),
-            engine:     { addressSpace: {} }
-          };
-        }
-      }
-    };
-
-    delete require.cache[require.resolve('./opcua-server-config')];
-    require('./opcua-server-config')(RED);
-    const MockedServerConfig = RED.nodes.getType('opcua-server-config');
-    require.cache[opcuaPath] = originalOpcua;
+    const MockedServerConfig = requireWithMockServer(function () {
+      return {
+        initialize: sinon.stub().rejects(new Error('EADDRINUSE')),
+        start:      sinon.stub(),
+        on:         sinon.stub().returnsThis(),
+        engine:     { addressSpace: {} }
+      };
+    });
 
     const nodeEvt = Object.create(EventEmitter.prototype);
     EventEmitter.call(nodeEvt);
