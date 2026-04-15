@@ -14,3 +14,6 @@ pki/issuers/
 # OS artifacts
 .DS_Store
 Thumbs.db
+
+# Internal research documents — must not be published
+Recherche.txt

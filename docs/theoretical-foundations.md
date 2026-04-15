@@ -605,19 +605,20 @@ node.context().global.get('key', 'storeAlias', (err, value) => { ... });
 - **Verbesserungen**: Verbesserte Array-Unterstützung (Float[ ], Double[ ], Int64[ ]), dynamische Node-Aktivierung via `${OPCUA_ENABLE}` Umgebungsvariablen
 - **Verbleibende Defizite**: Fundamentales Session-Management-Problem bleibt bestehen; kein Smart Batching
 
-### 11.3 @opcua/for-node-red (Kommerziell / State-of-the-Art)
+### 11.3 Kommerzielle State-of-the-Art Lösungen
 
-- **Hersteller**: Sterfive (core node-opcua Maintainer)
-- **Lizenz**: Kommerziell
+Im kommerziellen Umfeld existieren vollständige Node-RED OPC UA Integrations-Pakete, die die Schwächen der Open-Source-Derivate durch ein durchdachtes Architekturdesign vollständig adressieren.
+
+- **Lizenz**: Kommerziell (proprietär)
 - **Architektonische Stärken**:
   - Intelligent Session Sharing (ein Config Node, beliebig viele Worker)
-  - Smart Batching Algorithmus (dokumentiert: bis zu 90% Performancegewinn)
+  - Smart Batching Algorithmus (bis zu 90% Performancegewinn durch Request-Aggregation)
   - Industrial-Grade Auto-Healing mit exponentialem Backoff
   - Visueller NodeId-Browser direkt im Konfigurations-Dialog
   - Certificate Manager UI
   - TDD Methodik mit hoher Testabdeckung
 
-**Gap**: Diese Referenzarchitektur existiert ausschließlich als kommerzielle Lösung. Der neue OSS-Node schließt diese Lücke.
+**Gap**: Diese Referenzarchitektur existiert ausschließlich als kommerzielle Lösung. Der neue OSS-Node schließt diese Lücke, indem er identische Architekturmuster unter Apache 2.0 bereitstellt.
 
 ---
 
@@ -654,7 +655,7 @@ Die MIT-Lizenz ist die einfachste permissive Lizenz, enthält jedoch **keinen ex
 - **Lizenz**: MIT
 - **Sprache**: TypeScript (konsumierbar aus JavaScript)
 - **OPC UA Konformitätslevel**: 4/4 (vollständig)
-- **Aktive Wartung**: Ja (Sterfive, Core Foundation Member)
+- **Aktive Wartung**: Ja (aktiv gepflegt, MIT-lizenziert)
 
 ### 13.2 Wichtige Client-APIs
 
