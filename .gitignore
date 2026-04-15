@@ -1,0 +1,16 @@
+node_modules/
+coverage/
+.nyc_output/
+
+# PKI — never commit certificates or private keys
+pki/own/
+pki/trusted/
+pki/rejected/
+pki/issuers/
+
+# Node-RED flow credentials
+*_cred.json
+
+# OS artifacts
+.DS_Store
+Thumbs.db

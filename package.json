@@ -1,0 +1,60 @@
+{
+  "name": "node-red-contrib-opcua-pro",
+  "version": "0.1.0",
+  "description": "Production-grade OPC UA integration for Node-RED — open-source, session-pooling, smart batching, visual browser",
+  "keywords": [
+    "node-red",
+    "opcua",
+    "opc-ua",
+    "industrial",
+    "iiot",
+    "industry4.0",
+    "automation",
+    "plc"
+  ],
+  "author": "Contributors",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/your-org/node-red-contrib-opcua-pro",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/node-red-contrib-opcua-pro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/node-red-contrib-opcua-pro/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "node-red": {
+    "version": ">=3.0.0",
+    "nodes": {
+      "opcua-client-config": "nodes/client/opcua-client-config/opcua-client-config.js",
+      "opcua-read":          "nodes/client/opcua-read/opcua-read.js",
+      "opcua-write":         "nodes/client/opcua-write/opcua-write.js",
+      "opcua-subscribe":     "nodes/client/opcua-subscribe/opcua-subscribe.js",
+      "opcua-method":        "nodes/client/opcua-method/opcua-method.js",
+      "opcua-server-config": "nodes/server/opcua-server-config/opcua-server-config.js",
+      "opcua-folder":        "nodes/server/opcua-folder/opcua-folder.js",
+      "opcua-variable":      "nodes/server/opcua-variable/opcua-variable.js",
+      "opcua-server-method": "nodes/server/opcua-server-method/opcua-server-method.js",
+      "opcua-method-response": "nodes/server/opcua-method-response/opcua-method-response.js"
+    }
+  },
+  "main": "index.js",
+  "scripts": {
+    "test":     "mocha 'nodes/**/*.test.js' 'lib/**/*.test.js' 'test/**/*.test.js' --recursive --timeout 10000",
+    "coverage": "c8 npm test",
+    "lint":     "eslint nodes/ lib/ --ext .js",
+    "prepare":  "echo 'No build step required'"
+  },
+  "dependencies": {
+    "node-opcua": "^2.116.0"
+  },
+  "devDependencies": {
+    "mocha":     "^10.0.0",
+    "c8":        "^9.0.0",
+    "sinon":     "^17.0.0",
+    "eslint":    "^8.0.0"
+  }
+}
