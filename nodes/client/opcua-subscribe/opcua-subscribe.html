@@ -1,0 +1,90 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-subscribe', {
+      category:  'OPC UA',
+      color:     '#3FADB5',
+      defaults: {
+        name:                 { value: '' },
+        connection:           { value: '', type: 'opcua-client-config', required: true },
+        nodeId:               { value: '', required: true },
+        publishingInterval:   { value: 500,  validate: RED.validators.number() },
+        samplingInterval:     { value: 100,  validate: RED.validators.number() },
+        deadbandType:         { value: 'None' },
+        deadbandValue:        { value: 0, validate: RED.validators.number() },
+        queueSize:            { value: 10, validate: RED.validators.number() }
+      },
+      inputs:  0,
+      outputs: 1,
+      icon:    'font-awesome/fa-bell',
+      label: function() {
+        return this.name || this.nodeId || 'opcua subscribe';
+      },
+      paletteLabel: 'opcua subscribe',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-subscribe">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
+    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature">
+  </div>
+  <hr/>
+  <div class="form-row">
+    <label for="node-input-publishingInterval"><i class="fa fa-clock-o"></i> Publishing (ms)</label>
+    <input type="number" id="node-input-publishingInterval" min="50" step="50">
+  </div>
+  <div class="form-row">
+    <label for="node-input-samplingInterval"><i class="fa fa-tachometer"></i> Sampling (ms)</label>
+    <input type="number" id="node-input-samplingInterval" min="10" step="10">
+  </div>
+  <div class="form-row">
+    <label for="node-input-deadbandType"><i class="fa fa-filter"></i> Deadband</label>
+    <select id="node-input-deadbandType" style="width:70%">
+      <option value="None" selected>None</option>
+      <option value="Absolute">Absolute</option>
+      <option value="Percent">Percent</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-deadbandValue"><i class="fa fa-sliders"></i> Deadband Value</label>
+    <input type="number" id="node-input-deadbandValue" min="0" step="0.1">
+  </div>
+  <div class="form-row">
+    <label for="node-input-queueSize"><i class="fa fa-database"></i> Queue Size</label>
+    <input type="number" id="node-input-queueSize" min="1" step="1">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-subscribe">
+  <p>Subscribes to DataChange notifications for an OPC UA variable. Emits a message each time the value changes on the server.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>The deserialized new value of the OPC UA variable.</dd>
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>The NodeId of the monitored variable.</dd>
+    <dt>opcua <span class="property-type">object</span></dt>
+    <dd>OPC UA metadata: <code>nodeId</code>, <code>statusCode</code>, <code>sourceTimestamp</code>, <code>serverTimestamp</code>, <code>dataType</code>.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>Uses the OPC UA Subscription/MonitoredItem mechanism (Report by Exception). The node automatically subscribes when a session becomes active and re-subscribes after a reconnect.</p>
+  <h3>Parameters</h3>
+  <ul>
+    <li><strong>Publishing Interval</strong> — How often the server checks for data changes (ms).</li>
+    <li><strong>Sampling Interval</strong> — How often the data source is sampled (ms).</li>
+    <li><strong>Deadband</strong> — Filter to suppress insignificant value changes.</li>
+    <li><strong>Queue Size</strong> — Number of notifications buffered server-side.</li>
+  </ul>
+</script>

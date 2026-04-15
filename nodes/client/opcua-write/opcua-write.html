@@ -1,0 +1,73 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-write', {
+      category:  'OPC UA',
+      color:     '#3FADB5',
+      defaults: {
+        name:       { value: '' },
+        connection: { value: '', type: 'opcua-client-config', required: true },
+        nodeId:     { value: '' },
+        datatype:   { value: 'Double' }
+      },
+      inputs:  1,
+      outputs: 1,
+      icon:    'font-awesome/fa-upload',
+      label: function() {
+        return this.name || this.nodeId || 'opcua write';
+      },
+      paletteLabel: 'opcua write',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-write">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
+    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-datatype"><i class="fa fa-cube"></i> Data Type</label>
+    <select id="node-input-datatype" style="width:70%">
+      <option value="Boolean">Boolean</option>
+      <option value="Int16">Int16</option>
+      <option value="UInt16">UInt16</option>
+      <option value="Int32">Int32</option>
+      <option value="UInt32">UInt32</option>
+      <option value="Float">Float</option>
+      <option value="Double" selected>Double</option>
+      <option value="String">String</option>
+      <option value="DateTime">DateTime</option>
+    </select>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-write">
+  <p>Writes a value to an OPC UA variable on the connected server using Smart Batching.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>The value to write to the OPC UA variable.</dd>
+    <dt class="optional">topic <span class="property-type">string</span></dt>
+    <dd>OPC UA NodeId to write to. Overrides the configured NodeId when set.</dd>
+    <dt class="optional">datatype <span class="property-type">string</span></dt>
+    <dd>OPC UA data type name (e.g. "Double", "Boolean"). Overrides the configured data type when set.</dd>
+  </dl>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>opcua <span class="property-type">object</span></dt>
+    <dd>Write result with <code>nodeId</code> and <code>statusCode</code>.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>Concurrent writes from multiple nodes are automatically batched into a single <code>WriteMultipleRequest</code>. The value in <code>msg.payload</code> is wrapped in an OPC UA Variant using the configured or inferred data type.</p>
+</script>

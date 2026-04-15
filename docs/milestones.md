@@ -12,7 +12,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | Meilenstein | Inhalt | WPs | Status |
 |---|---|---|---|
 | [M1 — Foundation](#m1--foundation) | Node-RED Package, FSM, Config Nodes (Client + Server) | WP-C-1, WP-S-1 | ✅ Abgeschlossen |
-| [M2 — Resilience & Core Data](#m2--resilience--core-data) | Reconnect, Batching, Read/Write/Subscribe | WP-C-2, WP-C-3 | ⬜ Offen |
+| [M2 — Resilience & Core Data](#m2--resilience--core-data) | Reconnect, Batching, Read/Write/Subscribe | WP-C-2, WP-C-3 | ✅ Abgeschlossen |
 | [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ⬜ Offen |
 | [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ⬜ Offen |
 | [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ⬜ Offen |
@@ -26,6 +26,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 |---|---|---|
 | M1 | 2026-04-15 | HTML-Dialoge, Session-Manager Skeleton erstellt |
 | M1 | 2026-07-15 | FSM in `lib/client/fsm.js` extrahiert, 21 Unit-Tests grün, hexy-Override, Commit `73dfbea` |
+| M2 | 2026-04-15 | Error Handler, Connection Manager, Session Manager mit Subscription-Reactivation, opcua-read/write/subscribe vollständig implementiert, 186 Tests grün |
 
 ---
 
@@ -66,24 +67,24 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 **Ziel:** Vollständige Reconnect-Logik mit Session Re-Establishment. Alle lesenden/schreibenden Worker-Nodes mit Smart Batching. UDT-Deserialisierung. End-to-End-Datenfluss gegen Mock-Server nachgewiesen.
 
 **WPs:** WP-C-2, WP-C-3 (Read, Write, Subscribe)  
-**Status:** ⬜ Offen
+**Status:** ✅ Abgeschlossen (2026-04-15)
 
 ### Enthaltene Deliverables
 
 | Deliverable | Datei | Status |
 |---|---|---|
-| Connection Manager (Backoff) | `lib/client/connection-manager.js` | ⬜ |
-| Session Manager (Re-Establishment) | `lib/client/session-manager.js` | ⬜ |
-| Error Handler (OPC UA Codes) | `lib/client/error-handler.js` | ⬜ |
-| Batch Scheduler (vollständig) | `lib/client/batch-scheduler.js` | ⬜ |
-| UDT Deserializer (vollständig) | `lib/client/udt-deserializer.js` | ⬜ |
-| opcua-read (vollständig) | `nodes/client/opcua-read/opcua-read.js` | ⬜ |
-| opcua-read HTML | `nodes/client/opcua-read/opcua-read.html` | ⬜ |
-| opcua-write (vollständig) | `nodes/client/opcua-write/opcua-write.js` | ⬜ |
-| opcua-write HTML | `nodes/client/opcua-write/opcua-write.html` | ⬜ |
-| opcua-subscribe (vollständig) | `nodes/client/opcua-subscribe/opcua-subscribe.js` | ⬜ |
-| opcua-subscribe HTML | `nodes/client/opcua-subscribe/opcua-subscribe.html` | ⬜ |
-| Reconnect Integration-Test | `test/integration/client-reconnect.test.js` | ⬜ |
+| Connection Manager (Backoff) | `lib/client/connection-manager.js` | ✅ |
+| Session Manager (Re-Establishment) | `lib/client/session-manager.js` | ✅ |
+| Error Handler (OPC UA Codes) | `lib/client/error-handler.js` | ✅ |
+| Batch Scheduler (vollständig) | `lib/client/batch-scheduler.js` | ✅ |
+| UDT Deserializer (vollständig) | `lib/client/udt-deserializer.js` | ✅ |
+| opcua-read (vollständig) | `nodes/client/opcua-read/opcua-read.js` | ✅ |
+| opcua-read HTML | `nodes/client/opcua-read/opcua-read.html` | ✅ |
+| opcua-write (vollständig) | `nodes/client/opcua-write/opcua-write.js` | ✅ |
+| opcua-write HTML | `nodes/client/opcua-write/opcua-write.html` | ✅ |
+| opcua-subscribe (vollständig) | `nodes/client/opcua-subscribe/opcua-subscribe.js` | ✅ |
+| opcua-subscribe HTML | `nodes/client/opcua-subscribe/opcua-subscribe.html` | ✅ |
+| Reconnect Integration-Test | `test/integration/client-reconnect.test.js` | ✅ |
 
 ### Akzeptanzkriterien M2
 

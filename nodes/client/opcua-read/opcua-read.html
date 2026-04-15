@@ -1,0 +1,72 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-read', {
+      category:  'OPC UA',
+      color:     '#3FADB5',
+      defaults: {
+        name:       { value: '' },
+        connection: { value: '', type: 'opcua-client-config', required: true },
+        nodeId:     { value: '' },
+        datatype:   { value: 'Double' }
+      },
+      inputs:  1,
+      outputs: 1,
+      icon:    'font-awesome/fa-download',
+      label: function() {
+        return this.name || this.nodeId || 'opcua read';
+      },
+      paletteLabel: 'opcua read',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-read">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
+    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-datatype"><i class="fa fa-cube"></i> Data Type</label>
+    <select id="node-input-datatype" style="width:70%">
+      <option value="Boolean">Boolean</option>
+      <option value="Int16">Int16</option>
+      <option value="UInt16">UInt16</option>
+      <option value="Int32">Int32</option>
+      <option value="UInt32">UInt32</option>
+      <option value="Float">Float</option>
+      <option value="Double" selected>Double</option>
+      <option value="String">String</option>
+      <option value="DateTime">DateTime</option>
+    </select>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-read">
+  <p>Reads an OPC UA variable value from the connected server using Smart Batching.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt class="optional">topic <span class="property-type">string</span></dt>
+    <dd>OPC UA NodeId to read. Overrides the configured NodeId when set.</dd>
+  </dl>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>The deserialized value of the OPC UA variable.</dd>
+    <dt>opcua <span class="property-type">object</span></dt>
+    <dd>OPC UA metadata: <code>nodeId</code>, <code>statusCode</code>, <code>sourceTimestamp</code>, <code>serverTimestamp</code>, <code>dataType</code>.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>Concurrent reads from multiple nodes are automatically batched into a single <code>ReadMultipleRequest</code> using the Smart Batching Scheduler. This reduces network overhead by up to 90%.</p>
+  <p>TypedArrays (Float32Array, Int32Array) are automatically converted to plain JS Arrays. Extension Objects (UDTs) are recursively decoded into nested JSON.</p>
+</script>
