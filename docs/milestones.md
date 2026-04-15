@@ -1,0 +1,246 @@
+# Meilensteine — OPC UA Node-RED Open-Source Node
+
+Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerhalb einer Agent-Session vollständig implementierbar sind. Jeder Meilenstein ist in sich abgeschlossen und liefert lauffähige, getestete Software.
+
+**Basis:** [docs/work-packages.md](./work-packages.md)  
+**Anforderungen:** [AGENTS.md](../AGENTS.md#requirements-catalog)
+
+---
+
+## Übersicht
+
+| Meilenstein | Inhalt | WPs | Status |
+|---|---|---|---|
+| [M1 — Foundation](#m1--foundation) | Node-RED Package, FSM, Config Nodes (Client + Server) | WP-C-1, WP-S-1 | ✅ Abgeschlossen |
+| [M2 — Resilience & Core Data](#m2--resilience--core-data) | Reconnect, Batching, Read/Write/Subscribe | WP-C-2, WP-C-3 | ⬜ Offen |
+| [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ⬜ Offen |
+| [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ⬜ Offen |
+| [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ⬜ Offen |
+| [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ⬜ Offen |
+
+---
+
+## Fortschrittsprotokoll
+
+| Meilenstein | Session-Datum | Ergebnis |
+|---|---|---|
+| M1 | 2026-04-15 | Config Node FSM, Server Lifecycle, HTML-Dialoge, Unit-Tests — alle grün |
+
+---
+
+## M1 — Foundation
+
+**Ziel:** Das Node-RED Package ist installierbar. Client-Config-Node und Server-Config-Node funktionieren mit vollständigem Lifecycle (connect, disconnect, redeploy). FSM ist vollständig getestet.
+
+**WPs:** WP-C-1, WP-S-1  
+**Status:** ✅ Abgeschlossen (2026-04-15)
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| npm-Paketstruktur | `package.json` | ✅ |
+| Apache 2.0 Lizenz | `LICENSE` | ✅ |
+| FSM Backend | `nodes/client/opcua-client-config/opcua-client-config.js` | ✅ |
+| Config-Node HTML-Dialog | `nodes/client/opcua-client-config/opcua-client-config.html` | ✅ |
+| FSM Unit-Tests | `nodes/client/opcua-client-config/opcua-client-config.test.js` | ✅ |
+| Server-Config Backend | `nodes/server/opcua-server-config/opcua-server-config.js` | ✅ |
+| Server-Config HTML-Dialog | `nodes/server/opcua-server-config/opcua-server-config.html` | ✅ |
+| Server Lifecycle Tests | `nodes/server/opcua-server-config/opcua-server-config.test.js` | ✅ |
+| Session-Manager Skeleton | `lib/client/session-manager.js` | ✅ |
+
+### Akzeptanzkriterien M1
+
+- [x] `npm install` ohne Fehler
+- [x] Node-RED erkennt alle registrierten Nodes (kein `Error: Cannot find module`)
+- [x] Alle 6 FSM-Zustände per Unit-Test erreichbar
+- [x] Ungültige FSM-Übergänge werfen Exception
+- [x] Server startet und stoppt ohne Port-Konflikt (doppelter Deploy)
+- [x] Credentials werden verschlüsselt gespeichert
+
+---
+
+## M2 — Resilience & Core Data
+
+**Ziel:** Vollständige Reconnect-Logik mit Session Re-Establishment. Alle lesenden/schreibenden Worker-Nodes mit Smart Batching. UDT-Deserialisierung. End-to-End-Datenfluss gegen Mock-Server nachgewiesen.
+
+**WPs:** WP-C-2, WP-C-3 (Read, Write, Subscribe)  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| Connection Manager (Backoff) | `lib/client/connection-manager.js` | ⬜ |
+| Session Manager (Re-Establishment) | `lib/client/session-manager.js` | ⬜ |
+| Error Handler (OPC UA Codes) | `lib/client/error-handler.js` | ⬜ |
+| Batch Scheduler (vollständig) | `lib/client/batch-scheduler.js` | ⬜ |
+| UDT Deserializer (vollständig) | `lib/client/udt-deserializer.js` | ⬜ |
+| opcua-read (vollständig) | `nodes/client/opcua-read/opcua-read.js` | ⬜ |
+| opcua-read HTML | `nodes/client/opcua-read/opcua-read.html` | ⬜ |
+| opcua-write (vollständig) | `nodes/client/opcua-write/opcua-write.js` | ⬜ |
+| opcua-write HTML | `nodes/client/opcua-write/opcua-write.html` | ⬜ |
+| opcua-subscribe (vollständig) | `nodes/client/opcua-subscribe/opcua-subscribe.js` | ⬜ |
+| opcua-subscribe HTML | `nodes/client/opcua-subscribe/opcua-subscribe.html` | ⬜ |
+| Reconnect Integration-Test | `test/integration/client-reconnect.test.js` | ⬜ |
+
+### Akzeptanzkriterien M2
+
+- [ ] 100 gleichzeitige Read-Inputs erzeugen genau 1 ReadMultipleRequest (Unit-Test)
+- [ ] `msg.payload` enthält direkten Wert, kein OPC UA Wrapper-Objekt
+- [ ] `msg.opcua.statusCode` ist `"Good"` / `"Bad"` / `"Uncertain"` als String
+- [ ] Float32Array / Int32Array → normales JS-Array
+- [ ] Netzwerkabbruch < Session-Lifetime → Session-Tabelle wächst nicht (Integration-Test)
+- [ ] Subscriptions liefern nach Reconnect weiterhin Daten
+- [ ] `BadTooManySessions` wird als ERROR geloggt, kein silent-fail
+
+---
+
+## M3 — Server Address Space
+
+**Ziel:** Node-RED kann einen OPC UA Server mit programmatisch aufgebautem Adressraum hosten. Variablen sind bidirektional mit dem Node-RED Flow/Global-Context verknüpft. NodeSet2.xml-Import funktioniert.
+
+**WPs:** WP-S-2, WP-S-3  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| opcua-folder (vollständig) | `nodes/server/opcua-folder/opcua-folder.js` + `.html` | ⬜ |
+| opcua-variable (vollständig) | `nodes/server/opcua-variable/opcua-variable.js` + `.html` | ⬜ |
+| Context Bridge (vollständig) | `lib/server/context-bridge.js` | ⬜ |
+| NodeSet Importer (vollständig) | `lib/server/nodeset-importer.js` | ⬜ |
+| Context Bridge Unit-Tests | `lib/server/context-bridge.test.js` | ⬜ |
+| NodeSet Importer Tests | `lib/server/nodeset-importer.test.js` | ⬜ |
+| Beispiel NodeSet2.xml | `test/fixtures/sample.NodeSet2.xml` | ⬜ |
+| Server Lifecycle Integration-Test | `test/integration/server-lifecycle.test.js` | ⬜ |
+
+### Akzeptanzkriterien M3
+
+- [ ] OPC UA Client kann Variable lesen, die per `flow.set()` gesetzt wurde
+- [ ] OPC UA Client schreibt Variable → `flow.get()` gibt neuen Wert zurück
+- [ ] Gültige NodeSet2.xml wird ohne Fehler eingelesen
+- [ ] Fehlerhafte NodeSet2.xml wirft Exception, Node-RED bleibt stabil
+- [ ] Path-Traversal-Eingaben in NodeSet-Pfad werden abgelehnt
+
+---
+
+## M4 — RPC & Methods
+
+**Ziel:** Client kann OPC UA Methods aufrufen. Server kann Methoden registrieren und deren Aufruf via Correlation-ID durch den Node-RED Flow routen und beantworten.
+
+**WPs:** WP-C-3 (opcua-method), WP-S-4  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| opcua-method Client (vollständig) | `nodes/client/opcua-method/opcua-method.js` + `.html` | ⬜ |
+| opcua-server-method (vollständig) | `nodes/server/opcua-server-method/opcua-server-method.js` + `.html` | ⬜ |
+| opcua-method-response (vollständig) | `nodes/server/opcua-method-response/opcua-method-response.js` + `.html` | ⬜ |
+| Method Call Integration-Test | `test/integration/method-call.test.js` | ⬜ |
+
+### Akzeptanzkriterien M4
+
+- [ ] OPC UA Method-Call → `msg._opcua_method_id` + `msg.payload` (Input-Args) erscheint im Flow
+- [ ] `opcua-method-response` liefert Ergebnis korrekt zurück
+- [ ] Gleichzeitige Calls werden per UUID korrekt korreliert
+- [ ] Timeout-Einträge werden aus der Correlation-Tabelle entfernt (kein Memory-Leak)
+
+---
+
+## M5 — Visual UX & Security
+
+**Ziel:** Nutzer können NodeIds per Klick aus dem OPC UA-Baum entnehmen. PKI-Zertifikate werden über das Browser-UI verwaltet. Server validiert Client-Zertifikate und persistiert abgelehnte Certs.
+
+**WPs:** WP-C-4, WP-C-5, WP-S-5  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| HTTP Browse-Route | `nodes/client/opcua-client-config/opcua-client-config.js` (Erweiterung) | ⬜ |
+| RED.treeList Browser UI | `nodes/client/opcua-client-config/opcua-client-config.html` (Erweiterung) | ⬜ |
+| Auto-Zertifikatsgenerator | `lib/client/pki-manager.js` (vollständig) | ⬜ |
+| PKI HTTP-Routen (list/trust) | `nodes/client/opcua-client-config/opcua-client-config.js` (Erweiterung) | ⬜ |
+| Security Dashboard HTML | `nodes/client/opcua-client-config/opcua-client-config.html` (Erweiterung) | ⬜ |
+| Server PKI Manager | `lib/server/pki-manager.js` | ⬜ |
+| PKI Unit-Tests | `lib/client/pki-manager.test.js` (vollständig) | ⬜ |
+
+### Akzeptanzkriterien M5
+
+- [ ] Browse-Route antwortet < 2 s für Server mit 10.000 Knoten
+- [ ] Klick auf Variable trägt NodeId in Eingabefeld ein
+- [ ] Lazy Loading: Kinder erst bei Aufklappen geladen
+- [ ] Path-Traversal in Browse-NodeId abgelehnt
+- [ ] `fs.renameSync` (atomar) für Trust-Operation — kein copyFile+unlink
+- [ ] Dateiname-Validierung in Trust-Route verhindert Path-Traversal
+
+---
+
+## M6 — Quality & Release
+
+**Ziel:** Alle Tests grün, Coverage ≥ 85%, Dokumentation vollständig. Paket ist bereit für `npm publish`.
+
+**WPs:** WP-C-6  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| GitHub Actions CI vollständig | `.github/workflows/ci.yml` | ⬜ |
+| Coverage ≥ 85% nachgewiesen | `coverage/` Report | ⬜ |
+| Node-RED Info Sidebar für alle Nodes | Alle `.html`-Dateien | ⬜ |
+| CHANGELOG.md | `CHANGELOG.md` | ⬜ |
+| npm Publish-Vorbereitung | `package.json` (final) | ⬜ |
+
+### Akzeptanzkriterien M6
+
+- [ ] `npm test` läuft ohne externen OPC UA Server
+- [ ] Coverage ≥ 85% Lines, Functions; ≥ 80% Branches
+- [ ] `npm audit` meldet keine High/Critical Vulnerabilities
+- [ ] Jeder Node hat Info-Sidebar Hilfetext
+- [ ] `npm pack` erzeugt valides `.tgz` ohne `node_modules`
+
+---
+
+## Session-Leitfaden für Agents
+
+**Vor jeder Session:**
+1. Lies dieses Dokument — finde den ersten Meilenstein mit Status `⬜ Offen`
+2. Lies [docs/work-packages.md](./work-packages.md) für die vollständige technische Ausarbeitung des Meilensteins
+3. Lies [docs/theoretical-foundations.md](./theoretical-foundations.md) für relevante Protokoll-Grundlagen (Kapitel-Referenzen stehen in den WPs)
+4. Prüfe den aktuellen Code-Stand der betroffenen Dateien
+
+**Während der Session:**
+- Implementiere alle Deliverables des Meilensteins
+- Schreibe Tests parallel zur Implementierung (TDD)
+- Führe nach jeder Datei `npm test` aus und prüfe auf Fehler
+
+**Nach der Session:**
+1. Alle Akzeptanzkriterien des Meilensteins abhaken
+2. Status in der Übersichtstabelle auf `✅ Abgeschlossen` setzen
+3. Datum ins Fortschrittsprotokoll eintragen
+4. `git add . ; git commit -m "feat(MX): ..."` ausführen
+
+---
+
+## Abhängigkeiten zwischen Meilensteinen
+
+```
+M1 (Foundation)
+  └──► M2 (Resilience & Core Data)
+         └──► M4 (RPC & Methods)
+         └──► M5 (Visual UX & Security) ◄── M1 (auch direkt)
+M1 (Foundation)
+  └──► M3 (Server Address Space)
+         └──► M4 (RPC & Methods)
+M2 + M3 + M4 + M5
+  └──────────────► M6 (Quality & Release)
+```
+
+**Kritischer Pfad:** M1 → M2 → M4 → M6

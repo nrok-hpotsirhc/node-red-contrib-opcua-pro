@@ -6,6 +6,7 @@
 |---|---|
 | [docs/theoretical-foundations.md](docs/theoretical-foundations.md) | OPC UA protocol deep-dive, Node-RED architecture, security, UDTs, PKI — read before implementing |
 | [docs/work-packages.md](docs/work-packages.md) | All work packages with deliverables, acceptance criteria, and code scaffolds |
+| [docs/milestones.md](docs/milestones.md) | Milestones grouping WPs into agent sessions — **start here each session** |
 | [README.md](README.md) | User-facing overview, installation, quick start |
 
 ---

@@ -1,55 +1,154 @@
 'use strict';
-// WP-C-1: opcua-client-config — Central Connection Manager (Finite State Machine)
+// WP-C-1 (M1): opcua-client-config — Central Connection Manager (Finite State Machine)
+// See: docs/milestones.md#m1--foundation
 // See: docs/work-packages.md#wp-c-1-basis-infrastruktur--configuration-node
 // See: docs/theoretical-foundations.md#10-node-red-architektur-und-low-code-paradigma
 
-const { OPCUAClient, MessageSecurityMode, SecurityPolicy, UserTokenType } = require('node-opcua');
-const EventEmitter = require('events');
-const path = require('path');
+const {
+  OPCUAClient,
+  MessageSecurityMode,
+  SecurityPolicy,
+  UserTokenType
+} = require('node-opcua');
+const { OpcuaClientFSM } = require('../../../lib/client/fsm');
+
+// ─── Security Mode / Policy helpers ─────────────────────────────────────────
+
+const SECURITY_MODE_MAP = {
+  None:           MessageSecurityMode.None,
+  Sign:           MessageSecurityMode.Sign,
+  SignAndEncrypt: MessageSecurityMode.SignAndEncrypt
+};
+
+const SECURITY_POLICY_MAP = {
+  None:                  SecurityPolicy.None,
+  Basic256Sha256:        SecurityPolicy.Basic256Sha256,
+  Aes128_Sha256_RsaOaep: SecurityPolicy.Aes128_Sha256_RsaOaep,
+  Aes256_Sha256_RsaPss:  SecurityPolicy.Aes256_Sha256_RsaPss
+};
+
+function buildUserIdentity(config, credentials) {
+  if (config.authMode === 'UserName') {
+    return {
+      type:     UserTokenType.UserName,
+      userName: credentials.username || '',
+      password: credentials.password || ''
+    };
+  }
+  return { type: UserTokenType.Anonymous };
+}
+
+// ─── Node-RED Registration ───────────────────────────────────────────────────
 
 module.exports = function (RED) {
-
-  class OpcuaClientFSM extends EventEmitter {
-    constructor() {
-      super();
-      this.state = 'DISCONNECTED';
-    }
-
-    transition(newState) {
-      const allowed = {
-        DISCONNECTED:    ['CONNECTING'],
-        CONNECTING:      ['CONNECTED', 'DISCONNECTED'],
-        CONNECTED:       ['SESSION_ACTIVE', 'CONNECTION_LOST'],
-        SESSION_ACTIVE:  ['CONNECTION_LOST', 'DISCONNECTED'],
-        CONNECTION_LOST: ['RECONNECTING', 'DISCONNECTED'],
-        RECONNECTING:    ['CONNECTED', 'DISCONNECTED']
-      };
-      if (!allowed[this.state]?.includes(newState)) {
-        throw new Error(`Invalid FSM transition: ${this.state} → ${newState}`);
-      }
-      const prev = this.state;
-      this.state = newState;
-      this.emit('stateChange', newState, prev);
-    }
-  }
 
   function OpcuaClientConfig(config) {
     RED.nodes.createNode(this, config);
     const node = this;
 
-    node.fsm        = new OpcuaClientFSM();
-    node.client     = null;
-    node.session    = null;
-    node.scheduler  = null;  // Initialized in WP-C-3
+    node.fsm       = new OpcuaClientFSM();
+    node.client    = null;
+    node.session   = null;
+    node.scheduler = null; // Initialized in WP-C-3 (M2)
 
-    // TODO WP-C-1: Implement full connection lifecycle
-    // TODO WP-C-2: Implement exponential backoff reconnect
-    // TODO WP-C-3: Initialize BatchScheduler
-    // TODO WP-C-5: Initialize PKI / auto-generate certificate
+    const securityMode   = SECURITY_MODE_MAP[config.securityMode]   || MessageSecurityMode.SignAndEncrypt;
+    const securityPolicy = SECURITY_POLICY_MAP[config.securityPolicy] || SecurityPolicy.Basic256Sha256;
 
-    node.on('close', async (removed, done) => {
-      // TODO WP-C-1: Graceful disconnect — session.close() → client.disconnect()
-      done();
+    if (securityMode === MessageSecurityMode.None) {
+      node.warn('Security Mode "None" is active — connection is unencrypted. Do not use in production.');
+    }
+
+    // ── Connection setup ───────────────────────────────────────────────────
+    async function connect() {
+      node.fsm.transition('CONNECTING');
+
+      node.client = OPCUAClient.create({
+        applicationName:    config.applicationName || 'Node-RED OPC UA Client',
+        connectionStrategy: {
+          initialDelay:        1000,
+          maxDelay:            30000,
+          maxRetry:            Infinity,
+          randomisationFactor: 0.1
+        },
+        securityMode,
+        securityPolicy,
+        // WP-C-5 (M5) will supply certificateFile / privateKeyFile from pki-manager
+        keepSessionAlive: true
+      });
+
+      // FSM events from node-opcua internal reconnect machinery
+      node.client.on('connection_lost', () => {
+        if (node.fsm.state === 'SESSION_ACTIVE' || node.fsm.state === 'CONNECTED') {
+          node.fsm.transition('CONNECTION_LOST');
+        }
+      });
+
+      node.client.on('reconnecting', () => {
+        if (node.fsm.state === 'CONNECTION_LOST') {
+          node.fsm.transition('RECONNECTING');
+        }
+      });
+
+      node.client.on('connection_reestablished', () => {
+        if (node.fsm.state === 'RECONNECTING' || node.fsm.state === 'CONNECTION_LOST') {
+          node.fsm.transition('CONNECTED');
+        }
+      });
+
+      node.client.on('after_reconnection', async () => {
+        // WP-C-2 (M2): attempt session re-establishment before creating a new one
+        await activateSession();
+      });
+
+      await node.client.connect(config.endpoint);
+      node.fsm.transition('CONNECTED');
+      await activateSession();
+    }
+
+    async function activateSession() {
+      try {
+        node.session = await node.client.createSession(
+          buildUserIdentity(config, node.credentials || {})
+        );
+        node.session.on('session_closed', () => {
+          if (node.fsm.state === 'SESSION_ACTIVE') {
+            node.fsm.transition('CONNECTION_LOST');
+          }
+        });
+        node.fsm.transition('SESSION_ACTIVE');
+      } catch (err) {
+        node.error(`Session activation failed: ${err.message}`);
+      }
+    }
+
+    // ── Graceful shutdown ─────────────────────────────────────────────────
+    node.on('close', async (_removed, done) => {
+      // WP-C-2 (M2): scheduler cleanup will be added here
+      try {
+        if (node.session) {
+          await node.session.close();
+          node.session = null;
+        }
+        if (node.client) {
+          await node.client.disconnect();
+          node.client = null;
+        }
+      } catch (err) {
+        node.warn(`Disconnect error: ${err.message}`);
+      } finally {
+        if (node.fsm.state !== 'DISCONNECTED') {
+          node.fsm.transition('DISCONNECTED');
+        }
+        done();
+      }
+    });
+
+    // ── Start on deploy ───────────────────────────────────────────────────
+    connect().catch(err => {
+      node.error(`Initial connect failed: ${err.message}`);
+      if (node.fsm.state === 'CONNECTING') {
+        node.fsm.transition('DISCONNECTED');
+      }
     });
   }
 
@@ -60,6 +159,9 @@ module.exports = function (RED) {
     }
   });
 
-  // TODO WP-C-4: Register RED.httpAdmin browse route
-  // TODO WP-C-5: Register RED.httpAdmin PKI routes
+  // WP-C-4 (M5): register RED.httpAdmin browse route
+  // WP-C-5 (M5): register RED.httpAdmin PKI routes
 };
+
+// FSM is re-exported for convenience — tests should import from lib/client/fsm directly
+module.exports.OpcuaClientFSM = OpcuaClientFSM;

@@ -1,0 +1,55 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-server-config', {
+      category: 'config',
+      defaults: {
+        name:        { value: '' },
+        port:        { value: 4840, validate: RED.validators.number(), required: true },
+        resourcePath:{ value: '/UA/NodeRED' },
+        productName: { value: 'Node-RED OPC UA Server' },
+        nodeSets:    { value: '' }
+      },
+      label: function() {
+        return this.name || ('OPC UA Server :' + this.port);
+      }
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-server-config">
+  <div class="form-row">
+    <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-config-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-port"><i class="fa fa-plug"></i> Port</label>
+    <input type="number" id="node-config-input-port" min="1" max="65535">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-resourcePath"><i class="fa fa-link"></i> Resource Path</label>
+    <input type="text" id="node-config-input-resourcePath" placeholder="/UA/NodeRED">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-productName"><i class="fa fa-info"></i> Product Name</label>
+    <input type="text" id="node-config-input-productName" placeholder="Node-RED OPC UA Server">
+  </div>
+  <div class="form-row">
+    <label for="node-config-input-nodeSets"><i class="fa fa-file-code-o"></i> NodeSet2.xml Paths</label>
+    <input type="text" id="node-config-input-nodeSets" placeholder="/path/to/companion.NodeSet2.xml (comma-separated)">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-server-config">
+  <p>Central OPC UA server configuration node. Manages the <code>OPCUAServer</code> lifecycle, bound to Node-RED deploy/undeploy events.</p>
+  <h3>Properties</h3>
+  <dl class="message-properties">
+    <dt>Port</dt><dd>TCP port for the OPC UA server endpoint. Default: <code>4840</code>.</dd>
+    <dt>Resource Path</dt><dd>URL path for the endpoint. Default: <code>/UA/NodeRED</code>.</dd>
+    <dt>NodeSet2.xml Paths</dt><dd>Optional: comma-separated paths to companion specification XML files loaded at startup.</dd>
+  </dl>
+  <h3>Lifecycle</h3>
+  <p>Server starts on deploy, performs graceful shutdown on undeploy or redeploy, releasing the TCP port.</p>
+  <p>Address space is built by <code>opcua-folder</code> and <code>opcua-variable</code> nodes during server initialization.</p>
+</script>
