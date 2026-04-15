@@ -24,7 +24,8 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 
 | Meilenstein | Session-Datum | Ergebnis |
 |---|---|---|
-| M1 | 2026-04-15 | Config Node FSM, Server Lifecycle, HTML-Dialoge, Unit-Tests — alle grün |
+| M1 | 2026-04-15 | HTML-Dialoge, Session-Manager Skeleton erstellt |
+| M1 | 2026-07-15 | FSM in `lib/client/fsm.js` extrahiert, 21 Unit-Tests grün, hexy-Override, Commit `73dfbea` |
 
 ---
 
