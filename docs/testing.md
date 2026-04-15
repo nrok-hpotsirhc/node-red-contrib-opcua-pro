@@ -1,6 +1,6 @@
 # Test Strategy & Catalogue
 
-This document describes the complete automated test suite for `node-red-contrib-opcua-industrial`. It explains **what** is tested, **why** each suite exists, and **how** to run the tests.
+This document describes the complete automated test suite for `node-red-contrib-opcua-pro`. It explains **what** is tested, **why** each suite exists, and **how** to run the tests.
 
 ---
 
@@ -382,6 +382,28 @@ Legitimate exclusions (e.g. error boundaries that can't be reached in tests) mus
 3. Cover every exported function (≥ 1 happy path + ≥ 1 error path each).
 4. Add the file to this document's test catalogue.
 5. Run the full suite to confirm no regressions.
+
+### Marking mock & test data
+
+Every hardcoded value, stub, fixture, or seed datum that exists **only** for testing must be visibly annotated so it can be found and removed without touching production code:
+
+```js
+// single-line: comment on the same line
+const INITIAL_TEMPERATURE = 23.5; // TEST DATA
+const TEST_ENDPOINT = 'opc.tcp://localhost:4842'; // TEST DATA
+
+/* multi-line block: comment above the value */
+/* TEST DATA — seed value for write-then-read round-trip test */
+const WRITTEN_VALUE = 99.9;
+```
+
+This convention makes all test-only content grep-able across the whole repository:
+
+```bash
+grep -r "TEST DATA" .
+```
+
+The rule applies to: mock server variables, hardcoded NodeIds in test files, fixture objects, stub return values, and any constant that would be meaningless outside a test context.
 
 ### When you bump `node-opcua`
 

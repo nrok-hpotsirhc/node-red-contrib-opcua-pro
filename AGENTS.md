@@ -171,3 +171,4 @@ Develop a production-grade, open-source OPC UA integration for Node-RED that fil
 - Cover edge cases: unexpected connection drops, data type mismatches, oversized packets, concurrent subscriptions
 - Minimum 85% line coverage enforced in CI
 - Integration tests must verify session re-establishment without server-side session-table growth
+- **Mock & test data must be explicitly marked** — every hardcoded value, stub, fixture, or seed datum used only for testing must carry a `// TEST DATA` comment on the same line (or a `/* TEST DATA — <reason> */` block above it). This makes all test-only content grep-able (`grep -r "TEST DATA"`) and safe to remove without affecting production code.

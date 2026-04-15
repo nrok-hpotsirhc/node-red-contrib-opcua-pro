@@ -1,4 +1,4 @@
-# Contributing to node-red-contrib-opcua-industrial
+# Contributing to node-red-contrib-opcua-pro
 
 Thank you for considering a contribution. This document explains how to set up the development environment, add new features correctly, and keep the test suite in good shape.
 
@@ -36,8 +36,8 @@ Thank you for considering a contribution. This document explains how to set up t
 
 ```bash
 # 1. Clone
-git clone https://github.com/<org>/node-red-contrib-opcua-industrial.git
-cd node-red-contrib-opcua-industrial
+git clone https://github.com/<org>/node-red-contrib-opcua-pro.git
+cd node-red-contrib-opcua-pro
 
 # 2. Install (the hexy override is already in package.json — do not remove it)
 npm install
