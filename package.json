@@ -30,34 +30,36 @@
     "version": ">=3.0.0",
     "nodes": {
       "opcua-client-config": "nodes/client/opcua-client-config/opcua-client-config.js",
-      "opcua-read":          "nodes/client/opcua-read/opcua-read.js",
-      "opcua-write":         "nodes/client/opcua-write/opcua-write.js",
-      "opcua-subscribe":     "nodes/client/opcua-subscribe/opcua-subscribe.js",
-      "opcua-method":        "nodes/client/opcua-method/opcua-method.js",
+      "opcua-read": "nodes/client/opcua-read/opcua-read.js",
+      "opcua-write": "nodes/client/opcua-write/opcua-write.js",
+      "opcua-subscribe": "nodes/client/opcua-subscribe/opcua-subscribe.js",
+      "opcua-method": "nodes/client/opcua-method/opcua-method.js",
       "opcua-server-config": "nodes/server/opcua-server-config/opcua-server-config.js",
-      "opcua-folder":        "nodes/server/opcua-folder/opcua-folder.js",
-      "opcua-variable":      "nodes/server/opcua-variable/opcua-variable.js",
+      "opcua-folder": "nodes/server/opcua-folder/opcua-folder.js",
+      "opcua-variable": "nodes/server/opcua-variable/opcua-variable.js",
       "opcua-server-method": "nodes/server/opcua-server-method/opcua-server-method.js",
       "opcua-method-response": "nodes/server/opcua-method-response/opcua-method-response.js"
     }
   },
   "main": "index.js",
   "scripts": {
-    "test":     "mocha",
+    "test": "mocha",
     "coverage": "c8 mocha",
-    "lint":     "eslint nodes/ lib/ --ext .js",
-    "prepare":  "echo 'No build step required'"
+    "lint": "eslint nodes/ lib/ --ext .js",
+    "prepare": "echo 'No build step required'"
   },
   "dependencies": {
     "node-opcua": "^2.116.0"
   },
   "devDependencies": {
-    "mocha":     "^10.0.0",
-    "c8":        "^9.0.0",
-    "sinon":     "^17.0.0",
-    "eslint":    "^8.0.0"
+    "c8": "^9.0.0",
+    "eslint": "^8.0.0",
+    "mocha": "^11.7.5",
+    "sinon": "^17.0.0"
   },
   "overrides": {
-    "hexy": "0.2.11"
+    "hexy": "0.2.11",
+    "serialize-javascript": ">=7.0.5",
+    "diff": ">=8.0.3"
   }
 }

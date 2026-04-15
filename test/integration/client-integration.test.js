@@ -39,54 +39,6 @@ const { BatchScheduler }   = require('../../lib/client/batch-scheduler');
 const TEST_PORT = 4842;
 const TIMEOUT   = 15_000;
 
-// ── Server & Client lifecycle ─────────────────────────────────────────────────
-
-let mockServer;
-let client;
-let session;
-
-before(async function () {
-  this.timeout(TIMEOUT);
-  try {
-    mockServer = await createMockServer(TEST_PORT);
-  } catch (err) {
-    // Port in use — skip all integration tests gracefully
-    mockServer = null;
-    console.warn(`[integration] Skipping — could not start mock server on port ${TEST_PORT}: ${err.message}`);
-  }
-});
-
-beforeEach(async function () {
-  if (!mockServer) return this.skip();
-  this.timeout(TIMEOUT);
-
-  client = OPCUAClient.create({
-    applicationName:    'NodeRED-IntegrationTest',
-    connectionStrategy: { maxRetry: 1, initialDelay: 100, maxDelay: 500 },
-    securityMode:       MessageSecurityMode.None,   // No PKI needed for tests
-    securityPolicy:     SecurityPolicy.None
-  });
-
-  await client.connect(mockServer.endpointUrl);
-  session = await client.createSession();
-});
-
-afterEach(async function () {
-  if (!session) return;
-  this.timeout(TIMEOUT);
-  try {
-    await session.close();
-    await client.disconnect();
-  } catch (_) { /* always clean up */ }
-  session = null;
-  client  = null;
-});
-
-after(async function () {
-  this.timeout(TIMEOUT);
-  if (mockServer) await mockServer.stop();
-});
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function readNodeId(sess, nodeIdStr) {
@@ -97,6 +49,54 @@ async function readNodeId(sess, nodeIdStr) {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('OPC UA Client — Integration', function () {
+
+  // ── Server & Client lifecycle ───────────────────────────────────────────────
+
+  let mockServer;
+  let client;
+  let session;
+
+  before(async function () {
+    this.timeout(TIMEOUT);
+    try {
+      mockServer = await createMockServer(TEST_PORT);
+    } catch (err) {
+      // Port in use — skip all integration tests gracefully
+      mockServer = null;
+      console.warn(`[integration] Skipping — could not start mock server on port ${TEST_PORT}: ${err.message}`);
+    }
+  });
+
+  beforeEach(async function () {
+    if (!mockServer) return this.skip();
+    this.timeout(TIMEOUT);
+
+    client = OPCUAClient.create({
+      applicationName:    'NodeRED-IntegrationTest',
+      connectionStrategy: { maxRetry: 1, initialDelay: 100, maxDelay: 500 },
+      securityMode:       MessageSecurityMode.None,   // No PKI needed for tests
+      securityPolicy:     SecurityPolicy.None
+    });
+
+    await client.connect(mockServer.endpointUrl);
+    session = await client.createSession();
+  });
+
+  afterEach(async function () {
+    if (!session) return;
+    this.timeout(TIMEOUT);
+    try {
+      await session.close();
+      await client.disconnect();
+    } catch (_) { /* always clean up */ }
+    session = null;
+    client  = null;
+  });
+
+  after(async function () {
+    this.timeout(TIMEOUT);
+    if (mockServer) await mockServer.stop();
+  });
 
   // ── Basic read ─────────────────────────────────────────────────────────────
 
