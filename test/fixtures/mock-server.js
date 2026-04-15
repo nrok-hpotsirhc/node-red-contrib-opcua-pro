@@ -26,7 +26,8 @@ async function createMockServer(port = 4841) {
 
   // Scalar Double variable
   namespace.addVariable({
-    componentOf: objects,
+    nodeId:      'ns=1;s=Temperature',   // Explicit string NodeId for test predictability
+    organizedBy: objects,
     browseName:  'Temperature',
     dataType:    'Double',
     value: {
@@ -37,7 +38,8 @@ async function createMockServer(port = 4841) {
 
   // Scalar Double variable
   namespace.addVariable({
-    componentOf: objects,
+    nodeId:      'ns=1;s=Pressure',
+    organizedBy: objects,
     browseName:  'Pressure',
     dataType:    'Double',
     value: {
@@ -48,7 +50,8 @@ async function createMockServer(port = 4841) {
 
   // String variable
   namespace.addVariable({
-    componentOf: objects,
+    nodeId:      'ns=1;s=DeviceStatus',
+    organizedBy: objects,
     browseName:  'DeviceStatus',
     dataType:    'String',
     value: {
