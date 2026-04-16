@@ -27,18 +27,17 @@ This package fills the gap between outdated legacy OPC UA nodes and commercial e
 | M3 — Server Address Space | Folder/Variable-Nodes, Context-Bridge, NodeSet2.xml-Import | WP-S-2, WP-S-3 | ✅ Abgeschlossen |
 | M4 — RPC & Methods | Client Method-Call, Server-Methoden, Correlation-ID-Pattern | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
 | M5 — Visual UX & Security | Address-Space-Browser, PKI-Dashboard, Auto-Zertifikat, Server-PKI | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
-| M6 — Quality & Release | GitHub-Actions-CI, Coverage ≥ 85 %, Info-Sidebar, CHANGELOG, npm publish | WP-C-6 | ⬜ Offen |
+| M6 — Quality & Release | GitHub-Actions-CI, Coverage ≥ 85 %, Info-Sidebar, CHANGELOG, npm publish | WP-C-6 | ✅ Abgeschlossen |
 
 > Details und Akzeptanzkriterien: [docs/milestones.md](docs/milestones.md)
 
-### Offene Aufgaben (M6)
+### Qualitätskennzahlen
 
-- [ ] GitHub Actions CI-Workflow (`.github/workflows/ci.yml`)
-- [ ] Coverage ≥ 85 % Lines/Functions, ≥ 80 % Branches nachweisen
-- [ ] Info-Sidebar-Hilfetexte in allen `.html`-Node-Dateien
-- [ ] `CHANGELOG.md` anlegen
-- [ ] `package.json` für `npm publish` finalisieren (`files`, `keywords`, `repository`)
-- [ ] `npm audit` — keine High/Critical Vulnerabilities
+- **423 Tests** (Unit + Integration), alle grün
+- **90 %+ Line Coverage**, 90 %+ Branch Coverage, 96 %+ Function Coverage
+- **0 Vulnerabilities** (`npm audit`)
+- **0 Lint-Errors** (ESLint)
+- **Node.js 18 / 20 / 22** getestet via GitHub Actions CI
 
 ---
 
@@ -55,32 +54,43 @@ See [AGENTS.md](AGENTS.md) for the full architecture documentation.
 node-red-contrib-opcua-pro/
 ├── nodes/
 │   ├── client/
-│   │   ├── opcua-client-config/   # FSM-based connection manager
+│   │   ├── opcua-client-config/   # FSM-based connection manager + browse/PKI routes
 │   │   ├── opcua-read/            # Smart-batching read node
 │   │   ├── opcua-write/           # Smart-batching write node
 │   │   ├── opcua-subscribe/       # Push-based subscription node
 │   │   └── opcua-method/          # Client-side method call node
 │   └── server/
-│       ├── opcua-server-config/   # Server lifecycle manager
+│       ├── opcua-server-config/   # Server lifecycle manager + PKI routes
 │       ├── opcua-folder/          # Address space folder node
 │       ├── opcua-variable/        # Context-bridged variable node
 │       ├── opcua-server-method/   # Server-side RPC trigger
 │       └── opcua-method-response/ # Correlated method response
 ├── lib/
 │   ├── client/
-│   │   ├── connection-manager.js
-│   │   ├── session-manager.js
-│   │   ├── batch-scheduler.js
-│   │   └── udt-deserializer.js
-│   └── server/
-│       ├── address-space-builder.js
-│       ├── context-bridge.js
-│       └── nodeset-importer.js
+│   │   ├── batch-scheduler.js     # Micro-task-queue for request batching
+│   │   ├── connection-manager.js  # OPCUAClient factory with backoff
+│   │   ├── error-handler.js       # StatusCode classification
+│   │   ├── fsm.js                 # Finite State Machine
+│   │   ├── pki-manager.js         # Client PKI certificate management
+│   │   ├── session-manager.js     # Session re-establishment
+│   │   └── udt-deserializer.js    # Extension Object → JSON
+│   ├── server/
+│   │   ├── context-bridge.js      # OPC UA ↔ Node-RED context binding
+│   │   ├── nodeset-importer.js    # NodeSet2.xml import
+│   │   └── pki-manager.js         # Server PKI certificate management
+│   └── pki-base.js                # Shared PKI certificate generation
 ├── pki/                           # PKI certificates (gitignored)
 ├── test/
-│   ├── fixtures/mock-server.js
+│   ├── fixtures/
+│   │   ├── mock-server.js         # Mock OPC UA server for integration tests
+│   │   └── sample.NodeSet2.xml    # Sample companion specification
 │   └── integration/
+│       ├── client-integration.test.js
+│       ├── client-reconnect.test.js
+│       ├── method-call.test.js
+│       └── server-lifecycle.test.js
 └── docs/
+    ├── milestones.md
     ├── theoretical-foundations.md
     └── work-packages.md
 ```

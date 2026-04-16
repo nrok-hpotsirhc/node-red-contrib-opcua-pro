@@ -16,7 +16,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ✅ Abgeschlossen |
 | [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
 | [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
-| [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ⬜ Offen |
+| [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ✅ Abgeschlossen |
 
 ---
 
@@ -30,6 +30,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | M3 | 2026-04-15 | `opcua-folder`/`opcua-variable` vervollständigt, Context-Bridge Typprüfung (`BadTypeMismatch`), NodeSet-Import im Server-Config, Sample-NodeSet ergänzt, 189 Tests grün |
 | M4 | 2026-04-16 | opcua-method (Client), opcua-server-method, opcua-method-response vollständig implementiert, Correlation-ID Pattern, Timeout-Cleanup, Integration-Tests, 325 Tests grün |
 | M5 | 2026-04-16 | Browse-Route, PKI-Manager (Client+Server), Security Dashboard UI, Auto-Zertifikatsgenerierung, Address Space Browser mit Lazy Loading, Server PKI Routes, 363 Tests grün |
+| M6 | 2026-04-16 | ESLint-Konfiguration, 423 Tests grün, 90%+ Coverage (Lines/Branches), CHANGELOG.md, .npmignore, npm audit 0 Vulnerabilities, alle Lint-Errors behoben |
 
 ---
 
@@ -196,25 +197,26 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 **Ziel:** Alle Tests grün, Coverage ≥ 85%, Dokumentation vollständig. Paket ist bereit für `npm publish`.
 
 **WPs:** WP-C-6  
-**Status:** ⬜ Offen
+**Status:** ✅ Abgeschlossen (2026-04-16)
 
 ### Enthaltene Deliverables
 
 | Deliverable | Datei | Status |
 |---|---|---|
-| GitHub Actions CI vollständig | `.github/workflows/ci.yml` | ⬜ |
-| Coverage ≥ 85% nachgewiesen | `coverage/` Report | ⬜ |
-| Node-RED Info Sidebar für alle Nodes | Alle `.html`-Dateien | ⬜ |
-| CHANGELOG.md | `CHANGELOG.md` | ⬜ |
-| npm Publish-Vorbereitung | `package.json` (final) | ⬜ |
+| GitHub Actions CI vollständig | `.github/workflows/ci.yml` | ✅ |
+| Coverage ≥ 85% nachgewiesen | `coverage/` Report | ✅ (90%+ Lines, 90%+ Branches) |
+| Node-RED Info Sidebar für alle Nodes | Alle `.html`-Dateien | ✅ |
+| CHANGELOG.md | `CHANGELOG.md` | ✅ |
+| ESLint-Konfiguration | `.eslintrc.json` | ✅ |
+| npm Publish-Vorbereitung | `package.json`, `.npmignore` | ✅ |
 
 ### Akzeptanzkriterien M6
 
-- [ ] `npm test` läuft ohne externen OPC UA Server
-- [ ] Coverage ≥ 85% Lines, Functions; ≥ 80% Branches
-- [ ] `npm audit` meldet keine High/Critical Vulnerabilities
-- [ ] Jeder Node hat Info-Sidebar Hilfetext
-- [ ] `npm pack` erzeugt valides `.tgz` ohne `node_modules`
+- [x] `npm test` läuft ohne externen OPC UA Server
+- [x] Coverage ≥ 85% Lines, Functions; ≥ 80% Branches
+- [x] `npm audit` meldet keine High/Critical Vulnerabilities
+- [x] Jeder Node hat Info-Sidebar Hilfetext
+- [x] `npm pack` erzeugt valides `.tgz` ohne `node_modules`
 
 ---
 

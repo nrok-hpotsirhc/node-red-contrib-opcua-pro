@@ -1,0 +1,25 @@
+# Development & build files
+.github/
+.eslintrc.json
+.mocharc.cjs
+.gitignore
+.nyc_output/
+
+# Test files
+test/
+nodes/**/*.test.js
+lib/**/*.test.js
+coverage/
+
+# Documentation source (not needed at runtime)
+docs/
+AGENTS.md
+CONTRIBUTING.md
+Recherche.txt
+
+# PKI directories (user-generated at runtime)
+pki/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
