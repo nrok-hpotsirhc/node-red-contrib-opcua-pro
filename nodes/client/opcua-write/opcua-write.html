@@ -18,7 +18,16 @@
         return this.name || this.nodeId || 'opcua write';
       },
       paletteLabel: 'opcua write',
-      align: 'left'
+      align: 'left',
+      oneditprepare: function() {
+        $('#opcua-write-browse-btn').on('click', function() {
+          if (typeof opcuaBrowseDialog === 'function') {
+            opcuaBrowseDialog('node-input-nodeId', 'node-input-connection');
+          } else {
+            RED.notify('Address Space Browser not available — open an opcua-read node first to load the browser component.', 'warning');
+          }
+        });
+      }
     });
   }());
 </script>
@@ -34,7 +43,10 @@
   </div>
   <div class="form-row">
     <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
-    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)">
+    <div style="display:inline-flex;width:70%;">
+      <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)" style="flex:1;">
+      <button id="opcua-write-browse-btn" type="button" class="red-ui-button" style="margin-left:4px;" title="Browse Address Space"><i class="fa fa-search"></i></button>
+    </div>
   </div>
   <div class="form-row">
     <label for="node-input-datatype"><i class="fa fa-cube"></i> Data Type</label>

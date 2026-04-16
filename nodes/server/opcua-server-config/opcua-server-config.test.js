@@ -25,7 +25,18 @@ function makeRedMock() {
       registerType(name, Constructor) {
         nodes[name] = Constructor;
       },
-      getType(name) { return nodes[name]; }
+      getType(name) { return nodes[name]; },
+      getNode() { return null; }
+    },
+    httpAdmin: {
+      get:  sinon.stub(),
+      post: sinon.stub()
+    },
+    auth: {
+      needsPermission: sinon.stub().returns((req, res, next) => next && next())
+    },
+    settings: {
+      userDir: require('os').tmpdir()
     }
   };
 }
@@ -97,8 +108,8 @@ describe('opcua-server-config lifecycle', () => {
     // Instantiate
     MockedServerConfig.call(node, { port: '4840', resourcePath: '/UA', productName: 'Test' });
 
-    // Wait for the post_initialize event to fire
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Wait for the post_initialize event to fire (includes async cert generation)
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     // Trigger close
     await new Promise(resolve => {
@@ -125,8 +136,8 @@ describe('opcua-server-config lifecycle', () => {
     // Should not throw — error is caught internally
     MockedServerConfig.call(nodeEvt, { port: '4840', resourcePath: '/UA', productName: 'Test' });
 
-    // Wait for the async startServer() to complete (and fail internally)
-    await new Promise(resolve => setTimeout(resolve, 50));
+    // Wait for the async startServer() to complete (includes cert generation and fail internally)
+    await new Promise(resolve => setTimeout(resolve, 3000));
 
     assert.ok(nodeEvt.error.calledOnce, 'node.error() must be called on start failure');
     assert.ok(nodeEvt.error.firstCall.args[0].includes('EADDRINUSE'),
