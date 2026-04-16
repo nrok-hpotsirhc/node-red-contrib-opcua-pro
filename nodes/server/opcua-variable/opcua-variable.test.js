@@ -308,7 +308,7 @@ describe('opcua-variable parseDefaultValue (via integration)', () => {
     const RED = makeRedMock();
     delete require.cache[require.resolve('./opcua-variable')];
     require('./opcua-variable')(RED);
-    const OpcuaVariable = RED.nodes.getType('opcua-variable');
+    RED.nodes.getType('opcua-variable');
 
     const as = makeAddressSpace();
     const serverConfig = makeServerConfigStub(null);

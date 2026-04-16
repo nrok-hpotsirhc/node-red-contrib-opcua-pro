@@ -39,7 +39,7 @@ function makeRedMock() {
         Object.assign(nodeInstance, EventEmitter.prototype);
         nodeStore[config.id || 'test-id'] = nodeInstance;
       },
-      registerType(name, Constructor, opts) {
+      registerType(name, Constructor, _opts) {
         nodes[name] = Constructor;
       },
       getNode(id) { return nodeStore[id] || null; }
