@@ -15,6 +15,7 @@ module.exports = function (RED) {
     }
 
     const setupFolder = (addressSpace) => {
+      if (node.folder) return;
       if (!addressSpace) {
         node.error('Address space is not available');
         node.status({ fill: 'red', shape: 'ring', text: 'No address space' });

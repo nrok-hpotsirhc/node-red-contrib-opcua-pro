@@ -4,22 +4,7 @@
 
 const { DataType, Variant } = require('node-opcua');
 const { STATUS_MAP } = require('../../../lib/client/node-status');
-
-const DATA_TYPE_MAP = {
-  Boolean:  DataType.Boolean,
-  SByte:    DataType.SByte,
-  Byte:     DataType.Byte,
-  Int16:    DataType.Int16,
-  UInt16:   DataType.UInt16,
-  Int32:    DataType.Int32,
-  UInt32:   DataType.UInt32,
-  Int64:    DataType.Int64,
-  UInt64:   DataType.UInt64,
-  Float:    DataType.Float,
-  Double:   DataType.Double,
-  String:   DataType.String,
-  DateTime: DataType.DateTime
-};
+const { DATA_TYPE_MAP } = require('../../../lib/data-type-map');
 
 module.exports = function (RED) {
   function OpcuaWrite(config) {

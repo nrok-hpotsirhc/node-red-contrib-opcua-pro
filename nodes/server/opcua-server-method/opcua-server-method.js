@@ -52,6 +52,7 @@ module.exports = function (RED) {
     const timeoutMs = parseInt(config.timeoutMs, 10) || 10000;
 
     const setupMethod = (addressSpace) => {
+      if (node.method) return;
       if (!addressSpace) {
         node.error('Address space is not available');
         node.status({ fill: 'red', shape: 'ring', text: 'No address space' });

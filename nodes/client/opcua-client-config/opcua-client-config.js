@@ -16,6 +16,7 @@ const { BatchScheduler }  = require('../../../lib/client/batch-scheduler');
 const { createClient }    = require('../../../lib/client/connection-manager');
 const { reestablishOrCreateSession, reactivateSubscriptions, buildUserIdentity } = require('../../../lib/client/session-manager');
 const { classifyError, ErrorCategory } = require('../../../lib/client/error-handler');
+const { isValidConfigId, registerPkiRoutes } = require('../../../lib/http-helpers');
 const {
   ensureClientCertificate,
   listRejectedCertificates,
@@ -120,7 +121,11 @@ module.exports = function (RED) {
 
       node.client.on('after_reconnection', async () => {
         // WP-C-2: Attempt session re-establishment before creating a new one
-        await activateSession();
+        try {
+          await activateSession();
+        } catch (err) {
+          node.warn(`Post-reconnect session activation failed: ${err.message}`);
+        }
       });
 
       await node.client.connect(config.endpoint);
@@ -131,6 +136,12 @@ module.exports = function (RED) {
     async function activateSession() {
       try {
         const userIdentity = getUserIdentity();
+
+        // Remove stale session_closed listener from previous session to prevent accumulation
+        if (node.session) {
+          node.session.removeAllListeners('session_closed');
+        }
+
         node.session = await reestablishOrCreateSession(
           node.session, node.client, userIdentity
         );
@@ -243,7 +254,7 @@ module.exports = function (RED) {
       nodeId = nodeId || 'RootFolder';
 
       // Input validation: configId must be alphanumeric + dots
-      if (!configId || !/^[a-z0-9.]+$/i.test(configId)) {
+      if (!configId || !isValidConfigId(configId)) {
         return res.status(400).json({ error: 'Invalid configId' });
       }
 
@@ -284,75 +295,11 @@ module.exports = function (RED) {
 
   // ── WP-C-5 (M5): PKI HTTP Routes ─────────────────────────────────────
 
-  // List rejected certificates
-  RED.httpAdmin.get(
-    '/opcua-admin/pki/rejected',
-    RED.auth.needsPermission('opcua-client-config.write'),
-    (req, res) => {
-      const { configId } = req.query;
-      if (!configId || !/^[a-z0-9.]+$/i.test(configId)) {
-        return res.status(400).json({ error: 'Invalid configId' });
-      }
-      const configNode = RED.nodes.getNode(configId);
-      if (!configNode || !configNode.pkiDir) {
-        return res.status(404).json({ error: 'Config node not found' });
-      }
-      try {
-        const files = listRejectedCertificates(configNode.pkiDir);
-        res.json(files.map(f => ({ name: f })));
-      } catch (err) {
-        res.status(500).json({ error: err.message });
-      }
-    }
-  );
-
-  // List trusted certificates
-  RED.httpAdmin.get(
-    '/opcua-admin/pki/trusted',
-    RED.auth.needsPermission('opcua-client-config.read'),
-    (req, res) => {
-      const { configId } = req.query;
-      if (!configId || !/^[a-z0-9.]+$/i.test(configId)) {
-        return res.status(400).json({ error: 'Invalid configId' });
-      }
-      const configNode = RED.nodes.getNode(configId);
-      if (!configNode || !configNode.pkiDir) {
-        return res.status(404).json({ error: 'Config node not found' });
-      }
-      try {
-        const files = listTrustedCertificates(configNode.pkiDir);
-        res.json(files.map(f => ({ name: f })));
-      } catch (err) {
-        res.status(500).json({ error: err.message });
-      }
-    }
-  );
-
-  // Trust a rejected certificate (move from rejected/ → trusted/certs/)
-  RED.httpAdmin.post(
-    '/opcua-admin/pki/trust',
-    RED.auth.needsPermission('opcua-client-config.write'),
-    (req, res) => {
-      const { configId, filename } = req.body || {};
-      if (!configId || !/^[a-z0-9.]+$/i.test(configId)) {
-        return res.status(400).json({ error: 'Invalid configId' });
-      }
-      if (!filename || typeof filename !== 'string') {
-        return res.status(400).json({ error: 'Missing filename' });
-      }
-      const configNode = RED.nodes.getNode(configId);
-      if (!configNode || !configNode.pkiDir) {
-        return res.status(404).json({ error: 'Config node not found' });
-      }
-      try {
-        trustCertificate(configNode.pkiDir, filename);
-        res.json({ success: true });
-      } catch (err) {
-        if (err.message.includes('Invalid certificate filename')) {
-          return res.status(400).json({ error: err.message });
-        }
-        res.status(500).json({ error: err.message });
-      }
-    }
-  );
+  registerPkiRoutes(RED, {
+    basePath:     '/opcua-admin/pki',
+    permission:   'opcua-client-config',
+    listRejected: listRejectedCertificates,
+    listTrusted:  listTrustedCertificates,
+    trust:        trustCertificate
+  });
 };

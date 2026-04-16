@@ -2,7 +2,7 @@
 
 Production-grade, open-source OPC UA integration for Node-RED.
 
-[![CI](https://github.com/your-org/node-red-contrib-opcua-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/node-red-contrib-opcua-pro/actions)
+[![CI](https://github.com/nrok-hpotsirhc/node-red-contrib-opcua-pro/actions/workflows/ci.yml/badge.svg)](https://github.com/nrok-hpotsirhc/node-red-contrib-opcua-pro/actions)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 ## Overview
