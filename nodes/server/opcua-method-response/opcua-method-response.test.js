@@ -20,7 +20,6 @@
  * See: docs/work-packages.md#wp-s-4 — RPC-Methoden & Event Handling
  */
 const assert = require('assert');
-const sinon  = require('sinon');
 
 // ── Mock Node-RED runtime ─────────────────────────────────────────────────
 
