@@ -40,7 +40,7 @@ module.exports = function (RED) {
       let certOpts = {};
       try {
         const { certFile, keyFile } = await ensureServerCertificate(
-          node.pkiDir, productName, serverPort
+          node.pkiDir, productName
         );
         certOpts = { certificateFile: certFile, privateKeyFile: keyFile };
       } catch (err) {

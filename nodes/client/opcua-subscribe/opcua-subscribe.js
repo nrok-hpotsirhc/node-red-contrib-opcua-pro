@@ -10,15 +10,7 @@ const {
   TimestampsToReturn
 } = require('node-opcua');
 const { normalizeDataValue } = require('../../../lib/client/udt-deserializer');
-
-const STATUS_MAP = {
-  DISCONNECTED:    { fill: 'red',    shape: 'ring', text: 'Disconnected' },
-  CONNECTING:      { fill: 'yellow', shape: 'ring', text: 'Connecting...' },
-  CONNECTED:       { fill: 'yellow', shape: 'dot',  text: 'Connected' },
-  SESSION_ACTIVE:  { fill: 'green',  shape: 'dot',  text: 'Subscribed' },
-  CONNECTION_LOST: { fill: 'red',    shape: 'dot',  text: 'Connection lost' },
-  RECONNECTING:    { fill: 'yellow', shape: 'ring', text: 'Reconnecting...' }
-};
+const { STATUS_MAP } = require('../../../lib/client/node-status');
 
 module.exports = function (RED) {
   function OpcuaSubscribe(config) {

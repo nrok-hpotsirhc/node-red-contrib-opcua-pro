@@ -3,6 +3,7 @@
 // See: docs/work-packages.md#wp-c-3-worker-nodes--smart-batching
 
 const { DataType, Variant } = require('node-opcua');
+const { STATUS_MAP } = require('../../../lib/client/node-status');
 
 const DATA_TYPE_MAP = {
   Boolean:  DataType.Boolean,
@@ -18,15 +19,6 @@ const DATA_TYPE_MAP = {
   Double:   DataType.Double,
   String:   DataType.String,
   DateTime: DataType.DateTime
-};
-
-const STATUS_MAP = {
-  DISCONNECTED:    { fill: 'red',    shape: 'ring', text: 'Disconnected' },
-  CONNECTING:      { fill: 'yellow', shape: 'ring', text: 'Connecting...' },
-  CONNECTED:       { fill: 'yellow', shape: 'dot',  text: 'Connected' },
-  SESSION_ACTIVE:  { fill: 'green',  shape: 'dot',  text: 'Ready' },
-  CONNECTION_LOST: { fill: 'red',    shape: 'dot',  text: 'Connection lost' },
-  RECONNECTING:    { fill: 'yellow', shape: 'ring', text: 'Reconnecting...' }
 };
 
 module.exports = function (RED) {

@@ -5,16 +5,15 @@
 // See: docs/work-packages.md#wp-c-5-security--pki-ui
 
 const {
-  OPCUAClient,
   MessageSecurityMode,
   SecurityPolicy,
-  UserTokenType,
   BrowseDirection,
   NodeClass
 } = require('node-opcua');
 const path = require('path');
 const { OpcuaClientFSM } = require('../../../lib/client/fsm');
 const { BatchScheduler }  = require('../../../lib/client/batch-scheduler');
+const { createClient }    = require('../../../lib/client/connection-manager');
 const { reestablishOrCreateSession, reactivateSubscriptions, buildUserIdentity } = require('../../../lib/client/session-manager');
 const { classifyError, ErrorCategory } = require('../../../lib/client/error-handler');
 const {
@@ -85,19 +84,12 @@ module.exports = function (RED) {
         }
       }
 
-      node.client = OPCUAClient.create({
-        applicationName:    appName,
-        connectionStrategy: {
-          initialDelay:        1000,
-          maxDelay:            30000,
-          maxRetry:            Infinity,
-          randomisationFactor: 0.1
-        },
+      node.client = createClient({
+        applicationName:         appName,
         securityMode,
         securityPolicy,
         ...certOpts,
-        keepSessionAlive:        true,
-        requestedSessionTimeout: config.requestedSessionTimeout || 60000
+        requestedSessionTimeout: config.requestedSessionTimeout
       });
 
       // ── node-opcua reconnect events → FSM transitions ──────────────────
@@ -364,6 +356,3 @@ module.exports = function (RED) {
     }
   );
 };
-
-// FSM is re-exported for convenience — tests should import from lib/client/fsm directly
-module.exports.OpcuaClientFSM = OpcuaClientFSM;

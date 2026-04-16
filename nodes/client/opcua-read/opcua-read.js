@@ -3,15 +3,7 @@
 // See: docs/work-packages.md#wp-c-3-worker-nodes--smart-batching
 
 const { normalizeDataValue } = require('../../../lib/client/udt-deserializer');
-
-const STATUS_MAP = {
-  DISCONNECTED:    { fill: 'red',    shape: 'ring', text: 'Disconnected' },
-  CONNECTING:      { fill: 'yellow', shape: 'ring', text: 'Connecting...' },
-  CONNECTED:       { fill: 'yellow', shape: 'dot',  text: 'Connected' },
-  SESSION_ACTIVE:  { fill: 'green',  shape: 'dot',  text: 'Ready' },
-  CONNECTION_LOST: { fill: 'red',    shape: 'dot',  text: 'Connection lost' },
-  RECONNECTING:    { fill: 'yellow', shape: 'ring', text: 'Reconnecting...' }
-};
+const { STATUS_MAP } = require('../../../lib/client/node-status');
 
 module.exports = function (RED) {
   function OpcuaRead(config) {

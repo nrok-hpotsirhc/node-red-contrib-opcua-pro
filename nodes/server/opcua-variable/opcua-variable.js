@@ -24,12 +24,9 @@ function parseDefaultValue(raw, dataType) {
   }
   case 'Int16':
   case 'Int32':
-  case 'UInt16':
-  case 'UInt32': {
-    const n = parseInt(raw, 10);
-    return Number.isFinite(n) ? n : undefined;
-  }
   case 'Int64':
+  case 'UInt16':
+  case 'UInt32':
   case 'UInt64': {
     const n = parseInt(raw, 10);
     return Number.isFinite(n) ? n : undefined;
