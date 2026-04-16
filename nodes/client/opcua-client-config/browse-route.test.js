@@ -110,16 +110,11 @@ describe('Browse Route (WP-C-4)', () => {
   });
 
   it('returns 503 when config node has no session', async () => {
-    RED._nodeStore['no-session'] = { session: null };
-    const res = mockRes();
-    await browseHandler({ query: { configId: 'no-session', nodeId: 'RootFolder' } }, res);
-    // configId contains a hyphen which doesn't match [a-z0-9.]+ — let's use a valid ID
-    delete RED._nodeStore['no-session'];
     RED._nodeStore['nosession1'] = { session: null };
-    const res2 = mockRes();
-    await browseHandler({ query: { configId: 'nosession1', nodeId: 'RootFolder' } }, res2);
-    assert.strictEqual(res2.statusCode, 503);
-    assert.ok(res2.body.error.includes('No active session'));
+    const res = mockRes();
+    await browseHandler({ query: { configId: 'nosession1', nodeId: 'RootFolder' } }, res);
+    assert.strictEqual(res.statusCode, 503);
+    assert.ok(res.body.error.includes('No active session'));
   });
 
   it('returns 503 when config node does not exist', async () => {

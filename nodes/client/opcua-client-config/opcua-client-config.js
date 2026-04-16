@@ -280,8 +280,7 @@ module.exports = function (RED) {
           browseName:  ref.browseName  ? ref.browseName.name  : '',
           nodeClass:   NodeClass[ref.nodeClass] || 'Unknown',
           hasChildren: ref.nodeClass === NodeClass.Object ||
-                       ref.nodeClass === NodeClass.View ||
-                       (ref.nodeClass === NodeClass.Variable && true)
+                       ref.nodeClass === NodeClass.View
         }));
 
         res.json(nodes);
