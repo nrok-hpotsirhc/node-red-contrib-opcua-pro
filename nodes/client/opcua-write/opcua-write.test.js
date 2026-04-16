@@ -194,4 +194,47 @@ describe('opcua-write', () => {
     configNode.fsm.emit('stateChange', 'RECONNECTING');
     assert.strictEqual(node._lastStatus.fill, 'yellow');
   });
+
+  it('passes Variant-like payload directly without re-wrapping', async () => {
+    let capturedValue;
+    const configNode = createMockConfigNode({
+      scheduler: {
+        scheduleWrite: async (nid, val) => {
+          capturedValue = val;
+          return { name: 'Good', value: 0 };
+        }
+      }
+    });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-write'].call(node, { connection: 'cfg1', nodeId: 'ns=1;s=T', datatype: 'Double' });
+
+    // Send a Variant-like object (has dataType and value fields)
+    const variantPayload = { dataType: 11, value: 42.0 }; // TEST DATA — Variant-like object
+    await node._handlers.input(
+      { payload: variantPayload },
+      () => {},
+      () => {}
+    );
+
+    // The value should be passed wrapped as { value: variantPayload }
+    assert.deepStrictEqual(capturedValue.value, variantPayload);
+  });
+
+  it('removes FSM listener on close', () => {
+    const configNode = createMockConfigNode({ fsmState: 'SESSION_ACTIVE' });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-write'].call(node, { connection: 'cfg1', nodeId: 'ns=1;s=T' });
+
+    const listenersBefore = configNode.fsm.listenerCount('stateChange');
+
+    let closeDone = false;
+    node._handlers.close(false, () => { closeDone = true; });
+
+    assert.ok(closeDone);
+    assert.ok(configNode.fsm.listenerCount('stateChange') < listenersBefore);
+  });
 });
