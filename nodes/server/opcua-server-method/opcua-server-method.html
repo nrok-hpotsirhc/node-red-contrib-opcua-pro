@@ -1,0 +1,80 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-server-method', {
+      category: 'OPC UA',
+      color: '#FDD0A2',
+      defaults: {
+        name:            { value: '' },
+        server:          { value: '', type: 'opcua-server-config', required: true },
+        methodName:      { value: '', required: true },
+        nodeId:          { value: '' },
+        parentNodeId:    { value: '' },
+        inputArguments:  { value: '[]' },
+        outputArguments: { value: '[]' },
+        timeoutMs:       { value: 10000 }
+      },
+      inputs: 0,
+      outputs: 1,
+      icon: 'font-awesome/fa-cog',
+      label: function() {
+        return this.name || this.methodName || 'opcua server method';
+      },
+      paletteLabel: 'opcua method',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-server-method">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-server"><i class="fa fa-server"></i> Server</label>
+    <input type="text" id="node-input-server">
+  </div>
+  <div class="form-row">
+    <label for="node-input-methodName"><i class="fa fa-cog"></i> Method Name</label>
+    <input type="text" id="node-input-methodName" placeholder="StartProcess">
+  </div>
+  <div class="form-row">
+    <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
+    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=StartProcess (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-parentNodeId"><i class="fa fa-link"></i> Parent NodeId</label>
+    <input type="text" id="node-input-parentNodeId" placeholder="Defaults to Objects folder">
+  </div>
+  <div class="form-row">
+    <label for="node-input-inputArguments"><i class="fa fa-sign-in"></i> Input Arguments</label>
+    <input type="text" id="node-input-inputArguments" placeholder='[{"name":"speed","dataType":"Double"}]'>
+  </div>
+  <div class="form-row">
+    <label for="node-input-outputArguments"><i class="fa fa-sign-out"></i> Output Arguments</label>
+    <input type="text" id="node-input-outputArguments" placeholder='[{"name":"result","dataType":"String"}]'>
+  </div>
+  <div class="form-row">
+    <label for="node-input-timeoutMs"><i class="fa fa-clock-o"></i> Timeout (ms)</label>
+    <input type="number" id="node-input-timeoutMs" min="1000" placeholder="10000">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-server-method">
+  <p>Registers an OPC UA method in the server address space and routes incoming calls into the Node-RED flow.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">array</span></dt>
+    <dd>Input arguments of the method call as plain values.</dd>
+    <dt>_opcua_method_id <span class="property-type">string</span></dt>
+    <dd>Correlation ID (UUID) — must be passed to the <code>opcua-method-response</code> node.</dd>
+    <dt>topic <span class="property-type">string</span></dt>
+    <dd>The method name.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>When an OPC UA client calls this method, a message is emitted into the flow containing the input arguments and a unique correlation ID. The flow must process the request and route the result to an <code>opcua-method-response</code> node that references this method node.</p>
+  <p><strong>Input/Output Arguments</strong> are defined as JSON arrays: <code>[{"name":"speed","dataType":"Double"}]</code>. Supported data types: Boolean, Double, Float, Int16, Int32, UInt16, UInt32, String, etc.</p>
+  <p><strong>Timeout</strong> controls the maximum time (ms) the server waits for a response before returning <code>BadTimeout</code> to the client. Default: 10000ms.</p>
+</script>

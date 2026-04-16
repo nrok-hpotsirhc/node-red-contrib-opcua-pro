@@ -1,0 +1,66 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-method', {
+      category:  'OPC UA',
+      color:     '#3FADB5',
+      defaults: {
+        name:       { value: '' },
+        connection: { value: '', type: 'opcua-client-config', required: true },
+        objectId:   { value: '' },
+        methodId:   { value: '' }
+      },
+      inputs:  1,
+      outputs: 1,
+      icon:    'font-awesome/fa-cog',
+      label: function() {
+        return this.name || this.methodId || 'opcua method';
+      },
+      paletteLabel: 'opcua method',
+      align: 'left'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-method">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-connection"><i class="fa fa-plug"></i> Connection</label>
+    <input type="text" id="node-input-connection">
+  </div>
+  <div class="form-row">
+    <label for="node-input-objectId"><i class="fa fa-cube"></i> Object NodeId</label>
+    <input type="text" id="node-input-objectId" placeholder="ns=2;s=Machine1 (or use msg.objectId)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-methodId"><i class="fa fa-cog"></i> Method NodeId</label>
+    <input type="text" id="node-input-methodId" placeholder="ns=2;s=StartProcess (or use msg.methodId)">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-method">
+  <p>Calls an OPC UA method on the connected server.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">array</span></dt>
+    <dd>Array of input arguments (Variant objects or plain values) to pass to the method.</dd>
+    <dt class="optional">objectId <span class="property-type">string</span></dt>
+    <dd>NodeId of the object that owns the method. Overrides the configured Object NodeId.</dd>
+    <dt class="optional">methodId <span class="property-type">string</span></dt>
+    <dd>NodeId of the method to call. Overrides the configured Method NodeId.</dd>
+  </dl>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">any</span></dt>
+    <dd>Method output arguments. Single value if only one output, array if multiple.</dd>
+    <dt>opcua <span class="property-type">object</span></dt>
+    <dd>Metadata: <code>objectId</code>, <code>methodId</code>, <code>statusCode</code>.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>Calls <code>session.call()</code> on the OPC UA client session. Input arguments should be provided as an array in <code>msg.payload</code>. If the method has no input arguments, send an empty array <code>[]</code>.</p>
+  <p>The Object NodeId and Method NodeId can be configured statically or provided dynamically via <code>msg.objectId</code> and <code>msg.methodId</code>.</p>
+</script>
