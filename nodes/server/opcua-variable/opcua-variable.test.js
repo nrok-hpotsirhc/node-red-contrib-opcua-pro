@@ -305,6 +305,11 @@ describe('opcua-variable parseDefaultValue (via integration)', () => {
   // behavior when creating variables with string config values.
 
   it('passes undefined defaultValue when config.defaultValue is empty string', () => {
+    const RED = makeRedMock();
+    delete require.cache[require.resolve('./opcua-variable')];
+    require('./opcua-variable')(RED);
+    RED.nodes.getType('opcua-variable');
+
     const as = makeAddressSpace();
     const serverConfig = makeServerConfigStub(null);
 

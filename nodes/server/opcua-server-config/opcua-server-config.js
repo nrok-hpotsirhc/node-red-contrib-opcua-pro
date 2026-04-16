@@ -6,7 +6,7 @@
 const { OPCUAServer } = require('node-opcua');
 const path = require('path');
 const { importNodeSets } = require('../../../lib/server/nodeset-importer');
-const { isValidConfigId, registerPkiRoutes } = require('../../../lib/http-helpers');
+const { registerPkiRoutes } = require('../../../lib/http-helpers');
 const {
   ensureServerCertificate,
   listRejectedClientCertificates,
