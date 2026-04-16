@@ -18,6 +18,30 @@ This package fills the gap between outdated legacy OPC UA nodes and commercial e
 | UDT Support | Raw ByteString | Auto-deserialized JSON |
 | PKI Management | CLI required | Browser-based Security Dashboard |
 
+## Project Status
+
+| Meilenstein | Inhalt | Work Packages | Status |
+|---|---|---|---|
+| M1 — Foundation | npm-Paket, FSM, Client-Config-Node, Server-Config-Node | WP-C-1, WP-S-1 | ✅ Abgeschlossen |
+| M2 — Resilience & Core Data | Reconnect/Backoff, Batch-Scheduler, Read/Write/Subscribe, UDT-Deserialisierung | WP-C-2, WP-C-3 | ✅ Abgeschlossen |
+| M3 — Server Address Space | Folder/Variable-Nodes, Context-Bridge, NodeSet2.xml-Import | WP-S-2, WP-S-3 | ✅ Abgeschlossen |
+| M4 — RPC & Methods | Client Method-Call, Server-Methoden, Correlation-ID-Pattern | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
+| M5 — Visual UX & Security | Address-Space-Browser, PKI-Dashboard, Auto-Zertifikat, Server-PKI | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
+| M6 — Quality & Release | GitHub-Actions-CI, Coverage ≥ 85 %, Info-Sidebar, CHANGELOG, npm publish | WP-C-6 | ⬜ Offen |
+
+> Details und Akzeptanzkriterien: [docs/milestones.md](docs/milestones.md)
+
+### Offene Aufgaben (M6)
+
+- [ ] GitHub Actions CI-Workflow (`.github/workflows/ci.yml`)
+- [ ] Coverage ≥ 85 % Lines/Functions, ≥ 80 % Branches nachweisen
+- [ ] Info-Sidebar-Hilfetexte in allen `.html`-Node-Dateien
+- [ ] `CHANGELOG.md` anlegen
+- [ ] `package.json` für `npm publish` finalisieren (`files`, `keywords`, `repository`)
+- [ ] `npm audit` — keine High/Critical Vulnerabilities
+
+---
+
 ## Architecture
 
 See [AGENTS.md](AGENTS.md) for the full architecture documentation.
