@@ -1,16 +1,6 @@
 {
   "env": {
     "node": true,
-    "es2021": true,
-    "mocha": true
-  },
-  "parserOptions": {
-    "ecmaVersion": 2022
-  },
-  "extends": "eslint:recommended",
-  "rules": {
-    "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "no-console": "off",
     "es2022": true,
     "mocha": true
   },
@@ -18,8 +8,10 @@
     "ecmaVersion": 2022,
     "sourceType": "script"
   },
+  "extends": "eslint:recommended",
   "rules": {
     "no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "no-console": "off",
     "no-undef": "error",
     "no-const-assign": "error",
     "no-dupe-keys": "error",

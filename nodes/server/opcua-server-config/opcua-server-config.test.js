@@ -536,16 +536,7 @@ function makeRedMockWithRoutes() {
   };
 }
 
-/** Minimal mock response object (mirrors browse-route.test.js pattern). */
-function mockRes() {
-  const res = {
-    statusCode: 200,
-    body: null,
-    status(code) { res.statusCode = code; return res; },
-    json(data) { res.body = data; return res; }
-  };
-  return res;
-}
+// mockRes() is defined at the top of this file and shared by all test blocks.
 
 describe('Server PKI HTTP Routes (WP-S-5)', () => {
 
