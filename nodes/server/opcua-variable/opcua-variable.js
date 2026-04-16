@@ -22,6 +22,8 @@ function parseDefaultValue(raw, dataType) {
     const n = parseFloat(raw);
     return Number.isFinite(n) ? n : undefined;
   }
+  case 'SByte':
+  case 'Byte':
   case 'Int16':
   case 'Int32':
   case 'Int64':
