@@ -30,6 +30,7 @@ async function createMockServer(port = 4841) {
     organizedBy: objects,
     browseName:  'Temperature',
     dataType:    'Double',
+    minimumSamplingInterval: 1000,
     value: {
       get: () => new Variant({ dataType: DataType.Double, value: state.temperature }),
       set: (v) => { state.temperature = v.value; return StatusCodes.Good; }
@@ -42,6 +43,7 @@ async function createMockServer(port = 4841) {
     organizedBy: objects,
     browseName:  'Pressure',
     dataType:    'Double',
+    minimumSamplingInterval: 1000,
     value: {
       get: () => new Variant({ dataType: DataType.Double, value: state.pressure }),
       set: (v) => { state.pressure = v.value; return StatusCodes.Good; }
@@ -54,6 +56,7 @@ async function createMockServer(port = 4841) {
     organizedBy: objects,
     browseName:  'DeviceStatus',
     dataType:    'String',
+    minimumSamplingInterval: 1000,
     value: {
       get: () => new Variant({ dataType: DataType.String, value: state.deviceStatus })
     }
