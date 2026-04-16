@@ -148,4 +148,136 @@ describe('opcua-subscribe', () => {
     assert.strictEqual(node._lastStatus.fill, 'red');
     assert.ok(node._lastStatus.text.includes('No NodeId'));
   });
+
+  it('handles subscription reactivation with expired subscriptions', () => {
+    const configNode = createMockConfigNode({ fsmState: 'DISCONNECTED' });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-subscribe'].call(node, {
+      connection: 'cfg1', nodeId: 'ns=1;s=T',
+      publishingInterval: 500, samplingInterval: 100, queueSize: 10
+    });
+
+    // Simulate subscription created then expired during reconnect
+    const fakeSub = { terminate: async () => {} };
+    node.subscription = fakeSub;
+
+    // Emit subscriptionsReactivated with our subscription as expired
+    configNode.emit('subscriptionsReactivated', { expired: [fakeSub] });
+
+    // Subscription should be nullified
+    assert.strictEqual(node.subscription, null);
+    assert.strictEqual(node.monitoredItem, null);
+  });
+
+  it('does nothing on subscriptionsReactivated if our sub is not expired', () => {
+    const configNode = createMockConfigNode({ fsmState: 'DISCONNECTED' });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-subscribe'].call(node, {
+      connection: 'cfg1', nodeId: 'ns=1;s=T',
+      publishingInterval: 500, samplingInterval: 100, queueSize: 10
+    });
+
+    const fakeSub = { terminate: async () => {} };
+    node.subscription = fakeSub;
+
+    // expired is a different subscription
+    configNode.emit('subscriptionsReactivated', { expired: [{ other: true }] });
+
+    // Our subscription should be untouched
+    assert.strictEqual(node.subscription, fakeSub);
+  });
+
+  it('returns early from setupSubscription when no session', () => {
+    const configNode = createMockConfigNode({
+      fsmState: 'SESSION_ACTIVE',
+      session: null
+    });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-subscribe'].call(node, {
+      connection: 'cfg1', nodeId: 'ns=1;s=T',
+      publishingInterval: 500, samplingInterval: 100, queueSize: 10
+    });
+
+    // Should have set SESSION_ACTIVE status (waiting for session)
+    assert.ok(node._lastStatus);
+  });
+
+  it('does not create duplicate subscription', () => {
+    const configNode = createMockConfigNode({
+      fsmState: 'SESSION_ACTIVE',
+      session: {}
+    });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-subscribe'].call(node, {
+      connection: 'cfg1', nodeId: 'ns=1;s=T',
+      publishingInterval: 500, samplingInterval: 100, queueSize: 10
+    });
+
+    // Manually set subscription as if already created
+    node.subscription = { id: 'existing' };
+
+    // Trigger SESSION_ACTIVE again — should NOT create a new subscription
+    configNode.fsm.emit('stateChange', 'SESSION_ACTIVE');
+    assert.strictEqual(node.subscription.id, 'existing');
+    assert.strictEqual(node._lastStatus.fill, 'green');
+    assert.ok(node._lastStatus.text.includes('Subscribed'));
+  });
+
+  it('cleans up subscription with terminate on close', async () => {
+    const configNode = createMockConfigNode({ fsmState: 'DISCONNECTED' });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-subscribe'].call(node, {
+      connection: 'cfg1', nodeId: 'ns=1;s=T',
+      publishingInterval: 500, samplingInterval: 100, queueSize: 10
+    });
+
+    let terminated = false;
+    const fakeSub = { terminate: async () => { terminated = true; } };
+    node.subscription = fakeSub;
+    configNode.subscriptions.push(fakeSub);
+
+    let closeDone = false;
+    node._handlers.close(false, () => { closeDone = true; });
+
+    // wait for async terminate
+    await new Promise(r => setTimeout(r, 50));
+
+    assert.ok(closeDone, 'done() must be called');
+    assert.ok(terminated, 'subscription.terminate() must be called');
+    assert.strictEqual(node.subscription, null);
+    assert.strictEqual(node.monitoredItem, null);
+  });
+
+  it('handles terminate error gracefully on close', async () => {
+    const configNode = createMockConfigNode({ fsmState: 'DISCONNECTED' });
+    RED._nodes['cfg1'] = configNode;
+
+    const node = {};
+    RED.registeredTypes['opcua-subscribe'].call(node, {
+      connection: 'cfg1', nodeId: 'ns=1;s=T',
+      publishingInterval: 500, samplingInterval: 100, queueSize: 10
+    });
+
+    const fakeSub = { terminate: async () => { throw new Error('AlreadyTerminated'); } }; // TEST DATA
+    node.subscription = fakeSub;
+    configNode.subscriptions.push(fakeSub);
+
+    let closeDone = false;
+    node._handlers.close(false, () => { closeDone = true; });
+
+    await new Promise(r => setTimeout(r, 50));
+
+    assert.ok(closeDone, 'done() must still be called after terminate error');
+    assert.strictEqual(node.subscription, null);
+  });
 });
