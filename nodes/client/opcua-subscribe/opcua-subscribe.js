@@ -20,6 +20,7 @@ module.exports = function (RED) {
     node.configNode   = RED.nodes.getNode(config.connection);
     node.subscription = null;
     node.monitoredItem = null;
+    let settingUp = false;
 
     if (!node.configNode) {
       node.status({ fill: 'red', shape: 'ring', text: 'No config node' });
@@ -59,15 +60,18 @@ module.exports = function (RED) {
       }
 
       if (!node.configNode.session) {
-        node.status(STATUS_MAP.SESSION_ACTIVE);
+        node.status({ fill: 'yellow', shape: 'ring', text: 'Waiting for session' });
         return;
       }
 
-      // Don't create duplicates
-      if (node.subscription) {
-        node.status({ fill: 'green', shape: 'dot', text: 'Subscribed' });
+      // Guard against concurrent setup (race from rapid FSM transitions)
+      if (settingUp || node.subscription) {
+        if (node.subscription) {
+          node.status({ fill: 'green', shape: 'dot', text: 'Subscribed' });
+        }
         return;
       }
+      settingUp = true;
 
       try {
         const subscription = ClientSubscription.create(node.configNode.session, {
@@ -120,6 +124,8 @@ module.exports = function (RED) {
       } catch (err) {
         node.error(`Subscription setup failed: ${err.message}`);
         node.status({ fill: 'red', shape: 'ring', text: 'Sub failed' });
+      } finally {
+        settingUp = false;
       }
     }
 

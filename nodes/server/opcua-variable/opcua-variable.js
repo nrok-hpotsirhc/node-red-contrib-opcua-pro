@@ -56,6 +56,7 @@ module.exports = function (RED) {
     }
 
     const setupVariable = (addressSpace) => {
+      if (node.variable) return;
       if (!addressSpace) {
         node.error('Address space is not available');
         node.status({ fill: 'red', shape: 'ring', text: 'No address space' });
