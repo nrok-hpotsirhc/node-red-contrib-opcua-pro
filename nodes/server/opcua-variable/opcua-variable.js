@@ -10,7 +10,10 @@ const { createVariableBinding } = require('../../../lib/server/context-bridge');
  * matching the configured OPC UA data type.
  */
 function parseDefaultValue(raw, dataType) {
-  if (raw === '' || raw === null || raw === undefined) return undefined;
+  if (raw === null || raw === undefined) return undefined;
+  // For String type, empty string is a valid default value
+  if (dataType === 'String') return String(raw);
+  if (raw === '') return undefined;
   switch (dataType) {
   case 'Boolean':
     return raw === 'true' || raw === true;
@@ -31,8 +34,6 @@ function parseDefaultValue(raw, dataType) {
     const n = parseInt(raw, 10);
     return Number.isFinite(n) ? n : undefined;
   }
-  case 'String':
-    return String(raw);
   default:
     return raw;
   }
@@ -88,7 +89,9 @@ module.exports = function (RED) {
             defaultValue: parsedDefault,
             triggerOnWrite: Boolean(config.triggerOnWrite),
             nodeId: config.nodeId,
-            minimumSamplingInterval: parseInt(config.minimumSamplingInterval, 10) || 1000
+            minimumSamplingInterval: config.minimumSamplingInterval != null
+              ? parseInt(config.minimumSamplingInterval, 10)
+              : 1000
           },
           flowContext,
           node
