@@ -14,7 +14,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | [M1 — Foundation](#m1--foundation) | Node-RED Package, FSM, Config Nodes (Client + Server) | WP-C-1, WP-S-1 | ✅ Abgeschlossen |
 | [M2 — Resilience & Core Data](#m2--resilience--core-data) | Reconnect, Batching, Read/Write/Subscribe | WP-C-2, WP-C-3 | ✅ Abgeschlossen |
 | [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ✅ Abgeschlossen |
-| [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ⬜ Offen |
+| [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
 | [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ⬜ Offen |
 | [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ⬜ Offen |
 
@@ -28,6 +28,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | M1 | 2026-07-15 | FSM in `lib/client/fsm.js` extrahiert, 21 Unit-Tests grün, hexy-Override, Commit `73dfbea` |
 | M2 | 2026-04-15 | Error Handler, Connection Manager, Session Manager mit Subscription-Reactivation, opcua-read/write/subscribe vollständig implementiert, 186 Tests grün |
 | M3 | 2026-04-15 | `opcua-folder`/`opcua-variable` vervollständigt, Context-Bridge Typprüfung (`BadTypeMismatch`), NodeSet-Import im Server-Config, Sample-NodeSet ergänzt, 189 Tests grün |
+| M4 | 2026-04-16 | opcua-method (Client), opcua-server-method, opcua-method-response vollständig implementiert, Correlation-ID Pattern, Timeout-Cleanup, Integration-Tests, 325 Tests grün |
 
 ---
 
@@ -134,23 +135,23 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 **Ziel:** Client kann OPC UA Methods aufrufen. Server kann Methoden registrieren und deren Aufruf via Correlation-ID durch den Node-RED Flow routen und beantworten.
 
 **WPs:** WP-C-3 (opcua-method), WP-S-4  
-**Status:** ⬜ Offen
+**Status:** ✅ Abgeschlossen (2026-04-16)
 
 ### Enthaltene Deliverables
 
 | Deliverable | Datei | Status |
 |---|---|---|
-| opcua-method Client (vollständig) | `nodes/client/opcua-method/opcua-method.js` + `.html` | ⬜ |
-| opcua-server-method (vollständig) | `nodes/server/opcua-server-method/opcua-server-method.js` + `.html` | ⬜ |
-| opcua-method-response (vollständig) | `nodes/server/opcua-method-response/opcua-method-response.js` + `.html` | ⬜ |
-| Method Call Integration-Test | `test/integration/method-call.test.js` | ⬜ |
+| opcua-method Client (vollständig) | `nodes/client/opcua-method/opcua-method.js` + `.html` | ✅ |
+| opcua-server-method (vollständig) | `nodes/server/opcua-server-method/opcua-server-method.js` + `.html` | ✅ |
+| opcua-method-response (vollständig) | `nodes/server/opcua-method-response/opcua-method-response.js` + `.html` | ✅ |
+| Method Call Integration-Test | `test/integration/method-call.test.js` | ✅ |
 
 ### Akzeptanzkriterien M4
 
-- [ ] OPC UA Method-Call → `msg._opcua_method_id` + `msg.payload` (Input-Args) erscheint im Flow
-- [ ] `opcua-method-response` liefert Ergebnis korrekt zurück
-- [ ] Gleichzeitige Calls werden per UUID korrekt korreliert
-- [ ] Timeout-Einträge werden aus der Correlation-Tabelle entfernt (kein Memory-Leak)
+- [x] OPC UA Method-Call → `msg._opcua_method_id` + `msg.payload` (Input-Args) erscheint im Flow
+- [x] `opcua-method-response` liefert Ergebnis korrekt zurück
+- [x] Gleichzeitige Calls werden per UUID korrekt korreliert
+- [x] Timeout-Einträge werden aus der Correlation-Tabelle entfernt (kein Memory-Leak)
 
 ---
 

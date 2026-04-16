@@ -1,0 +1,47 @@
+<script type="text/javascript">
+  (function() {
+    'use strict';
+
+    RED.nodes.registerType('opcua-method-response', {
+      category: 'OPC UA',
+      color: '#FDD0A2',
+      defaults: {
+        name:       { value: '' },
+        methodNode: { value: '', type: 'opcua-server-method', required: true }
+      },
+      inputs: 1,
+      outputs: 0,
+      icon: 'font-awesome/fa-reply',
+      label: function() {
+        return this.name || 'opcua method response';
+      },
+      paletteLabel: 'opcua response',
+      align: 'right'
+    });
+  }());
+</script>
+
+<script type="text/html" data-template-name="opcua-method-response">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="Name (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-methodNode"><i class="fa fa-cog"></i> Method Node</label>
+    <input type="text" id="node-input-methodNode">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="opcua-method-response">
+  <p>Sends a response back to a pending OPC UA method call.</p>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">array</span></dt>
+    <dd>Output arguments to return to the OPC UA client. Should be an array of Variant-like objects or plain values.</dd>
+    <dt>_opcua_method_id <span class="property-type">string</span></dt>
+    <dd>Correlation ID from the original method call — must match the ID received from the <code>opcua-server-method</code> node.</dd>
+  </dl>
+  <h3>Details</h3>
+  <p>This node completes an asynchronous OPC UA method call by correlating the response with the original request using <code>msg._opcua_method_id</code>. Connect the output of the <code>opcua-server-method</code> node through your processing logic and then into this node.</p>
+  <p>If the correlation ID is missing or no matching pending call is found, a warning is logged.</p>
+</script>
