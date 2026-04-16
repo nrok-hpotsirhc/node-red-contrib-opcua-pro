@@ -17,7 +17,8 @@
         contextStore: { value: '' },
         contextKey: { value: '', required: true },
         defaultValue: { value: '' },
-        triggerOnWrite: { value: false }
+        triggerOnWrite: { value: false },
+        minimumSamplingInterval: { value: 1000 }
       },
       inputs: 0,
       outputs: 1,
@@ -97,6 +98,10 @@
     <label for="node-input-triggerOnWrite"><i class="fa fa-bolt"></i> Trigger on Write</label>
     <input type="checkbox" id="node-input-triggerOnWrite" style="display:inline-block; width:auto; vertical-align:top;">
   </div>
+  <div class="form-row">
+    <label for="node-input-minimumSamplingInterval"><i class="fa fa-clock-o"></i> Min Sampling (ms)</label>
+    <input type="number" id="node-input-minimumSamplingInterval" min="0" placeholder="1000">
+  </div>
 </script>
 
 <script type="text/html" data-help-name="opcua-variable">
@@ -109,4 +114,5 @@
   <h3>Details</h3>
   <p>Reads map to <code>flow/global.get(contextKey)</code>. Writes update context and optionally emit a message into the flow.</p>
   <p>For <code>Int64</code>/<code>UInt64</code>, accepted write values are number, bigint, or tuple format <code>[low, high]</code>.</p>
+  <p><code>Min Sampling Interval</code> controls how often subscriptions can sample the variable (default: 1000ms).</p>
 </script>

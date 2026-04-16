@@ -5,6 +5,40 @@
 
 const { createVariableBinding } = require('../../../lib/server/context-bridge');
 
+/**
+ * Parse the defaultValue string from the HTML config into a typed value
+ * matching the configured OPC UA data type.
+ */
+function parseDefaultValue(raw, dataType) {
+  if (raw === null || raw === undefined) return undefined;
+  // For String type, empty string is a valid default value
+  if (dataType === 'String') return String(raw);
+  if (raw === '') return undefined;
+  switch (dataType) {
+  case 'Boolean':
+    return raw === 'true' || raw === true;
+  case 'Double':
+  case 'Float': {
+    const n = parseFloat(raw);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  case 'Int16':
+  case 'Int32':
+  case 'UInt16':
+  case 'UInt32': {
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  case 'Int64':
+  case 'UInt64': {
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  default:
+    return raw;
+  }
+}
+
 module.exports = function (RED) {
   function resolveParentNode(config, addressSpace) {
     const parentFolderNode = config.parentFolder ? RED.nodes.getNode(config.parentFolder) : null;
@@ -25,6 +59,11 @@ module.exports = function (RED) {
     }
 
     const setupVariable = (addressSpace) => {
+      if (!addressSpace) {
+        node.error('Address space is not available');
+        node.status({ fill: 'red', shape: 'ring', text: 'No address space' });
+        return;
+      }
       try {
         const parentNode = resolveParentNode(config, addressSpace);
 
@@ -38,6 +77,8 @@ module.exports = function (RED) {
           set: (key, value) => contextApi.set(key, value, contextStore)
         };
 
+        const parsedDefault = parseDefaultValue(config.defaultValue, config.dataType || 'Double');
+
         node.variable = createVariableBinding(
           addressSpace.getOwnNamespace(),
           parentNode,
@@ -45,9 +86,12 @@ module.exports = function (RED) {
             browseName: config.browseName || node.name || 'Variable',
             dataType: config.dataType || 'Double',
             contextKey: config.contextKey,
-            defaultValue: config.defaultValue,
+            defaultValue: parsedDefault,
             triggerOnWrite: Boolean(config.triggerOnWrite),
-            nodeId: config.nodeId
+            nodeId: config.nodeId,
+            minimumSamplingInterval: config.minimumSamplingInterval != null
+              ? parseInt(config.minimumSamplingInterval, 10)
+              : 1000
           },
           flowContext,
           node
@@ -55,6 +99,7 @@ module.exports = function (RED) {
         node.status({ fill: 'green', shape: 'dot', text: config.browseName });
       } catch (err) {
         node.error(`Failed to create variable: ${err.message}`);
+        node.status({ fill: 'red', shape: 'dot', text: `Error: ${err.message}` });
       }
     };
 

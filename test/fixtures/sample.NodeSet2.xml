@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- TEST DATA — Sample OPC UA NodeSet2 XML for integration testing -->
+<!-- This file is used by lib/server/nodeset-importer.test.js and test/integration tests -->
 <UANodeSet
   xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -6,4 +8,23 @@
   <NamespaceUris>
     <Uri>urn:node-red:opcua:sample</Uri>
   </NamespaceUris>
+
+  <!-- Sample ObjectType: a simple Device with temperature and status -->
+  <UAObjectType NodeId="ns=1;i=1001" BrowseName="1:SampleDeviceType" IsAbstract="false">
+    <DisplayName>SampleDeviceType</DisplayName>
+    <Description>A sample device type for testing NodeSet2 import</Description>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=58</Reference>
+    </References>
+  </UAObjectType>
+
+  <!-- Sample VariableType: a temperature measurement -->
+  <UAVariableType NodeId="ns=1;i=1002" BrowseName="1:TemperatureMeasurementType"
+    DataType="Double" ValueRank="-1" IsAbstract="false">
+    <DisplayName>TemperatureMeasurementType</DisplayName>
+    <Description>A sample variable type representing a temperature measurement</Description>
+    <References>
+      <Reference ReferenceType="HasSubtype" IsForward="false">i=63</Reference>
+    </References>
+  </UAVariableType>
 </UANodeSet>

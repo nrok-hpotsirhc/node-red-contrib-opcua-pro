@@ -15,6 +15,11 @@ module.exports = function (RED) {
     }
 
     const setupFolder = (addressSpace) => {
+      if (!addressSpace) {
+        node.error('Address space is not available');
+        node.status({ fill: 'red', shape: 'ring', text: 'No address space' });
+        return;
+      }
       try {
         const namespace = addressSpace.getOwnNamespace();
         let parent = addressSpace.rootFolder.objects;
@@ -35,6 +40,7 @@ module.exports = function (RED) {
         node.status({ fill: 'green', shape: 'dot', text: config.browseName });
       } catch (err) {
         node.error(`Failed to create folder: ${err.message}`);
+        node.status({ fill: 'red', shape: 'dot', text: `Error: ${err.message}` });
       }
     };
 
