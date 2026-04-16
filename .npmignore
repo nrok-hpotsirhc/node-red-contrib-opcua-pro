@@ -1,0 +1,25 @@
+# Test files — not needed in published package
+**/*.test.js
+test/
+coverage/
+.nyc_output/
+
+# Development files
+.mocharc.cjs
+.eslintrc*
+.github/
+
+# Documentation (dev-only)
+docs/
+AGENTS.md
+Recherche.txt
+
+# PKI — never publish certificates
+pki/own/
+pki/trusted/
+pki/rejected/
+pki/issuers/
+
+# OS artifacts
+.DS_Store
+Thumbs.db
