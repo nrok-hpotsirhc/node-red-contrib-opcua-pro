@@ -2,6 +2,107 @@
   (function() {
     'use strict';
 
+    // WP-C-4 (M5): Shared Address Space Browser helper for worker nodes
+    function opcuaBrowseDialog(targetInputId, connectionInputId) {
+      var configId = $('#' + connectionInputId).val();
+      if (!configId) {
+        RED.notify('Please select a connection first', 'warning');
+        return;
+      }
+
+      var $dialog = $('<div></div>');
+      var $tree = $('<div id="opcua-browse-tree" style="height:350px;overflow-y:auto;border:1px solid #ccc;padding:5px;"></div>');
+      $dialog.append($tree);
+
+      function loadNodes(nodeId, $container) {
+        var $loading = $('<div style="padding:4px;color:#888;"><i class="fa fa-spinner fa-spin"></i> Loading…</div>');
+        $container.append($loading);
+
+        $.getJSON('opcua-admin/browse?nodeId=' + encodeURIComponent(nodeId) + '&configId=' + encodeURIComponent(configId))
+          .done(function(nodes) {
+            $loading.remove();
+            if (!nodes || nodes.length === 0) {
+              $container.append('<div style="padding:4px;color:#888;"><em>No children</em></div>');
+              return;
+            }
+            var $ul = $('<ul style="list-style:none;padding-left:16px;margin:0;"></ul>');
+            nodes.forEach(function(n) {
+              var icon = (n.nodeClass === 'Variable') ? 'fa-tag' : 'fa-folder-o';
+              var $li = $('<li style="padding:2px 0;cursor:pointer;"></li>');
+              var $row = $('<div></div>');
+              if (n.hasChildren && n.nodeClass !== 'Variable') {
+                var $expander = $('<i class="fa fa-chevron-right" style="width:14px;margin-right:4px;color:#888;cursor:pointer;"></i>');
+                var expanded = false;
+                var $childContainer = $('<div style="display:none;"></div>');
+                $expander.on('click', function(e) {
+                  e.stopPropagation();
+                  if (!expanded) {
+                    expanded = true;
+                    $expander.removeClass('fa-chevron-right').addClass('fa-chevron-down');
+                    loadNodes(n.nodeId, $childContainer);
+                    $childContainer.show();
+                  } else {
+                    $childContainer.toggle();
+                    $expander.toggleClass('fa-chevron-right fa-chevron-down');
+                  }
+                });
+                $row.append($expander);
+                $li.append($row).append($childContainer);
+              } else {
+                $row.append('<i style="width:14px;margin-right:4px;display:inline-block;"></i>');
+                $li.append($row);
+              }
+              var $icon = $('<i class="fa ' + icon + '" style="margin-right:4px;"></i>');
+              var $label = $('<span></span>').text(n.displayName || n.browseName);
+              $row.append($icon).append($label);
+
+              // Click on a node to select it
+              $row.on('click', function() {
+                $tree.find('.opcua-browse-selected').removeClass('opcua-browse-selected');
+                $row.addClass('opcua-browse-selected').css('background-color', '#e0f0ff');
+                $dialog.data('selectedNodeId', n.nodeId);
+              });
+
+              $ul.append($li);
+            });
+            $container.append($ul);
+          })
+          .fail(function(xhr) {
+            $loading.remove();
+            var msg = (xhr.responseJSON && xhr.responseJSON.error) || 'Browse failed';
+            $container.append('<div style="padding:4px;color:#c00;"><i class="fa fa-exclamation-triangle"></i> ' + msg + '</div>');
+          });
+      }
+
+      // Load root nodes
+      loadNodes('RootFolder', $tree);
+
+      $dialog.dialog({
+        title:  'OPC UA Address Space Browser',
+        modal:  true,
+        width:  500,
+        height: 450,
+        buttons: [
+          {
+            text: 'Select',
+            class: 'primary',
+            click: function() {
+              var selectedId = $dialog.data('selectedNodeId');
+              if (selectedId) {
+                $('#' + targetInputId).val(selectedId);
+              }
+              $(this).dialog('close');
+            }
+          },
+          {
+            text: 'Cancel',
+            click: function() { $(this).dialog('close'); }
+          }
+        ],
+        close: function() { $(this).dialog('destroy').remove(); }
+      });
+    }
+
     RED.nodes.registerType('opcua-read', {
       category:  'OPC UA',
       color:     '#3FADB5',
@@ -17,7 +118,12 @@
         return this.name || this.nodeId || 'opcua read';
       },
       paletteLabel: 'opcua read',
-      align: 'left'
+      align: 'left',
+      oneditprepare: function() {
+        $('#opcua-read-browse-btn').on('click', function() {
+          opcuaBrowseDialog('node-input-nodeId', 'node-input-connection');
+        });
+      }
     });
   }());
 </script>
@@ -33,7 +139,10 @@
   </div>
   <div class="form-row">
     <label for="node-input-nodeId"><i class="fa fa-microchip"></i> NodeId</label>
-    <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)">
+    <div style="display:inline-flex;width:70%;">
+      <input type="text" id="node-input-nodeId" placeholder="ns=2;s=Temperature (or use msg.topic)" style="flex:1;">
+      <button id="opcua-read-browse-btn" type="button" class="red-ui-button" style="margin-left:4px;" title="Browse Address Space"><i class="fa fa-search"></i></button>
+    </div>
   </div>
 </script>
 

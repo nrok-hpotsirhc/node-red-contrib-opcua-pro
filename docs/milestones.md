@@ -15,7 +15,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | [M2 — Resilience & Core Data](#m2--resilience--core-data) | Reconnect, Batching, Read/Write/Subscribe | WP-C-2, WP-C-3 | ✅ Abgeschlossen |
 | [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ✅ Abgeschlossen |
 | [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
-| [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ⬜ Offen |
+| [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
 | [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ⬜ Offen |
 
 ---
@@ -29,6 +29,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | M2 | 2026-04-15 | Error Handler, Connection Manager, Session Manager mit Subscription-Reactivation, opcua-read/write/subscribe vollständig implementiert, 186 Tests grün |
 | M3 | 2026-04-15 | `opcua-folder`/`opcua-variable` vervollständigt, Context-Bridge Typprüfung (`BadTypeMismatch`), NodeSet-Import im Server-Config, Sample-NodeSet ergänzt, 189 Tests grün |
 | M4 | 2026-04-16 | opcua-method (Client), opcua-server-method, opcua-method-response vollständig implementiert, Correlation-ID Pattern, Timeout-Cleanup, Integration-Tests, 325 Tests grün |
+| M5 | 2026-04-16 | Browse-Route, PKI-Manager (Client+Server), Security Dashboard UI, Auto-Zertifikatsgenerierung, Address Space Browser mit Lazy Loading, Server PKI Routes, 363 Tests grün |
 
 ---
 
@@ -160,28 +161,33 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 **Ziel:** Nutzer können NodeIds per Klick aus dem OPC UA-Baum entnehmen. PKI-Zertifikate werden über das Browser-UI verwaltet. Server validiert Client-Zertifikate und persistiert abgelehnte Certs.
 
 **WPs:** WP-C-4, WP-C-5, WP-S-5  
-**Status:** ⬜ Offen
+**Status:** ✅ Abgeschlossen (2026-04-16)
 
 ### Enthaltene Deliverables
 
 | Deliverable | Datei | Status |
 |---|---|---|
-| HTTP Browse-Route | `nodes/client/opcua-client-config/opcua-client-config.js` (Erweiterung) | ⬜ |
-| RED.treeList Browser UI | `nodes/client/opcua-client-config/opcua-client-config.html` (Erweiterung) | ⬜ |
-| Auto-Zertifikatsgenerator | `lib/client/pki-manager.js` (vollständig) | ⬜ |
-| PKI HTTP-Routen (list/trust) | `nodes/client/opcua-client-config/opcua-client-config.js` (Erweiterung) | ⬜ |
-| Security Dashboard HTML | `nodes/client/opcua-client-config/opcua-client-config.html` (Erweiterung) | ⬜ |
-| Server PKI Manager | `lib/server/pki-manager.js` | ⬜ |
-| PKI Unit-Tests | `lib/client/pki-manager.test.js` (vollständig) | ⬜ |
+| HTTP Browse-Route | `nodes/client/opcua-client-config/opcua-client-config.js` (Erweiterung) | ✅ |
+| RED.treeList Browser UI | `nodes/client/opcua-client-config/opcua-client-config.html` (Erweiterung) | ✅ |
+| Auto-Zertifikatsgenerator | `lib/client/pki-manager.js` (vollständig) | ✅ |
+| PKI HTTP-Routen (list/trust) | `nodes/client/opcua-client-config/opcua-client-config.js` (Erweiterung) | ✅ |
+| Security Dashboard HTML | `nodes/client/opcua-client-config/opcua-client-config.html` (Erweiterung) | ✅ |
+| Server PKI Manager | `lib/server/pki-manager.js` | ✅ |
+| Browse-Route Unit-Tests | `nodes/client/opcua-client-config/browse-route.test.js` | ✅ |
+| PKI Unit-Tests (Client) | `lib/client/pki-manager.test.js` (erweitert) | ✅ |
+| PKI Unit-Tests (Server) | `lib/server/pki-manager.test.js` | ✅ |
+| Browse-Buttons in Worker-Nodes | `opcua-read/write/subscribe/method .html` | ✅ |
+| Server PKI Dashboard | `nodes/server/opcua-server-config/opcua-server-config.html` (Erweiterung) | ✅ |
+| Server PKI HTTP-Routen | `nodes/server/opcua-server-config/opcua-server-config.js` (Erweiterung) | ✅ |
 
 ### Akzeptanzkriterien M5
 
-- [ ] Browse-Route antwortet < 2 s für Server mit 10.000 Knoten
-- [ ] Klick auf Variable trägt NodeId in Eingabefeld ein
-- [ ] Lazy Loading: Kinder erst bei Aufklappen geladen
-- [ ] Path-Traversal in Browse-NodeId abgelehnt
-- [ ] `fs.renameSync` (atomar) für Trust-Operation — kein copyFile+unlink
-- [ ] Dateiname-Validierung in Trust-Route verhindert Path-Traversal
+- [x] Browse-Route antwortet < 2 s für Server mit 10.000 Knoten
+- [x] Klick auf Variable trägt NodeId in Eingabefeld ein
+- [x] Lazy Loading: Kinder erst bei Aufklappen geladen
+- [x] Path-Traversal in Browse-NodeId abgelehnt
+- [x] `fs.renameSync` (atomar) für Trust-Operation — kein copyFile+unlink
+- [x] Dateiname-Validierung in Trust-Route verhindert Path-Traversal
 
 ---
 

@@ -18,7 +18,23 @@
         return this.name || this.methodId || 'opcua method';
       },
       paletteLabel: 'opcua method',
-      align: 'left'
+      align: 'left',
+      oneditprepare: function() {
+        $('#opcua-method-browse-object-btn').on('click', function() {
+          if (typeof opcuaBrowseDialog === 'function') {
+            opcuaBrowseDialog('node-input-objectId', 'node-input-connection');
+          } else {
+            RED.notify('Address Space Browser not available — open an opcua-read node first to load the browser component.', 'warning');
+          }
+        });
+        $('#opcua-method-browse-method-btn').on('click', function() {
+          if (typeof opcuaBrowseDialog === 'function') {
+            opcuaBrowseDialog('node-input-methodId', 'node-input-connection');
+          } else {
+            RED.notify('Address Space Browser not available — open an opcua-read node first to load the browser component.', 'warning');
+          }
+        });
+      }
     });
   }());
 </script>
@@ -34,11 +50,17 @@
   </div>
   <div class="form-row">
     <label for="node-input-objectId"><i class="fa fa-cube"></i> Object NodeId</label>
-    <input type="text" id="node-input-objectId" placeholder="ns=2;s=Machine1 (or use msg.objectId)">
+    <div style="display:inline-flex;width:70%;">
+      <input type="text" id="node-input-objectId" placeholder="ns=2;s=Machine1 (or use msg.objectId)" style="flex:1;">
+      <button id="opcua-method-browse-object-btn" type="button" class="red-ui-button" style="margin-left:4px;" title="Browse Address Space"><i class="fa fa-search"></i></button>
+    </div>
   </div>
   <div class="form-row">
     <label for="node-input-methodId"><i class="fa fa-cog"></i> Method NodeId</label>
-    <input type="text" id="node-input-methodId" placeholder="ns=2;s=StartProcess (or use msg.methodId)">
+    <div style="display:inline-flex;width:70%;">
+      <input type="text" id="node-input-methodId" placeholder="ns=2;s=StartProcess (or use msg.methodId)" style="flex:1;">
+      <button id="opcua-method-browse-method-btn" type="button" class="red-ui-button" style="margin-left:4px;" title="Browse Address Space"><i class="fa fa-search"></i></button>
+    </div>
   </div>
 </script>
 

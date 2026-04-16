@@ -13,6 +13,63 @@
       },
       label: function() {
         return this.name || ('OPC UA Server :' + this.port);
+      },
+      oneditprepare: function() {
+        var nodeId = this.id;
+
+        // WP-S-5 (M5): Server PKI Dashboard
+        function loadRejectedClients() {
+          $.getJSON('opcua-admin/server-pki/rejected?configId=' + encodeURIComponent(nodeId))
+            .done(function(certs) {
+              var $list = $('#opcua-server-pki-rejected-list').empty();
+              if (!certs || certs.length === 0) {
+                $list.append('<li class="red-ui-editableList-item-content"><em>No rejected client certificates</em></li>');
+                return;
+              }
+              certs.forEach(function(cert) {
+                var $li = $('<li class="red-ui-editableList-item-content"></li>');
+                var $name = $('<span></span>').text(cert.name).css('margin-right', '10px');
+                var $btn  = $('<button class="red-ui-button red-ui-button-small" type="button"><i class="fa fa-check"></i> Trust</button>');
+                $btn.on('click', function() {
+                  $.ajax({
+                    url:  'opcua-admin/server-pki/trust',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ configId: nodeId, filename: cert.name })
+                  }).done(function() {
+                    loadRejectedClients();
+                    loadTrustedClients();
+                  }).fail(function(xhr) {
+                    RED.notify('Trust failed: ' + (xhr.responseJSON && xhr.responseJSON.error || 'Unknown error'), 'error');
+                  });
+                });
+                $li.append($name).append($btn);
+                $list.append($li);
+              });
+            })
+            .fail(function() {
+              $('#opcua-server-pki-rejected-list').html('<li><em>Could not load certificates</em></li>');
+            });
+        }
+
+        function loadTrustedClients() {
+          $.getJSON('opcua-admin/server-pki/trusted?configId=' + encodeURIComponent(nodeId))
+            .done(function(certs) {
+              var $list = $('#opcua-server-pki-trusted-list').empty();
+              if (!certs || certs.length === 0) {
+                $list.append('<li class="red-ui-editableList-item-content"><em>No trusted client certificates</em></li>');
+                return;
+              }
+              certs.forEach(function(cert) {
+                var $li = $('<li class="red-ui-editableList-item-content"></li>');
+                $li.text(cert.name);
+                $list.append($li);
+              });
+            });
+        }
+
+        loadRejectedClients();
+        loadTrustedClients();
       }
     });
   }());
@@ -39,6 +96,23 @@
     <label for="node-config-input-nodeSets"><i class="fa fa-file-code-o"></i> NodeSet2.xml Paths</label>
     <input type="text" id="node-config-input-nodeSets" placeholder="/path/to/companion.NodeSet2.xml (comma-separated)">
   </div>
+  <hr/>
+  <!-- WP-S-5 (M5): Server PKI Dashboard -->
+  <div class="form-row">
+    <label><i class="fa fa-certificate"></i> Client Certificate Management</label>
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <h4 style="margin-bottom:5px;"><i class="fa fa-ban" style="color:#c00;"></i> Rejected Client Certificates</h4>
+    <ul id="opcua-server-pki-rejected-list" style="list-style:none;padding:0;max-height:120px;overflow-y:auto;border:1px solid #ddd;padding:5px;">
+      <li><em>Loading…</em></li>
+    </ul>
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <h4 style="margin-bottom:5px;"><i class="fa fa-check-circle" style="color:#0a0;"></i> Trusted Client Certificates</h4>
+    <ul id="opcua-server-pki-trusted-list" style="list-style:none;padding:0;max-height:120px;overflow-y:auto;border:1px solid #ddd;padding:5px;">
+      <li><em>Loading…</em></li>
+    </ul>
+  </div>
 </script>
 
 <script type="text/html" data-help-name="opcua-server-config">
@@ -52,4 +126,7 @@
   <h3>Lifecycle</h3>
   <p>Server starts on deploy, performs graceful shutdown on undeploy or redeploy, releasing the TCP port.</p>
   <p>Address space is built by <code>opcua-folder</code> and <code>opcua-variable</code> nodes during server initialization.</p>
+  <h3>PKI &amp; Security</h3>
+  <p>A self-signed X.509 server certificate is automatically generated on first startup. Unknown client certificates are placed in the <strong>rejected</strong> store. Use the "Trust" button in the Security Dashboard to accept client certificates.</p>
+  <p>Trust operations use atomic <code>fs.renameSync</code> — no inconsistent intermediate state possible.</p>
 </script>
