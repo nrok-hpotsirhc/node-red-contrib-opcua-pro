@@ -13,7 +13,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 |---|---|---|---|
 | [M1 — Foundation](#m1--foundation) | Node-RED Package, FSM, Config Nodes (Client + Server) | WP-C-1, WP-S-1 | ✅ Abgeschlossen |
 | [M2 — Resilience & Core Data](#m2--resilience--core-data) | Reconnect, Batching, Read/Write/Subscribe | WP-C-2, WP-C-3 | ✅ Abgeschlossen |
-| [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ⬜ Offen |
+| [M3 — Server Address Space](#m3--server-address-space) | Folder/Variable Nodes, Context Bridge | WP-S-2, WP-S-3 | ✅ Abgeschlossen |
 | [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ⬜ Offen |
 | [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ⬜ Offen |
 | [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ⬜ Offen |
@@ -27,6 +27,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | M1 | 2026-04-15 | HTML-Dialoge, Session-Manager Skeleton erstellt |
 | M1 | 2026-07-15 | FSM in `lib/client/fsm.js` extrahiert, 21 Unit-Tests grün, hexy-Override, Commit `73dfbea` |
 | M2 | 2026-04-15 | Error Handler, Connection Manager, Session Manager mit Subscription-Reactivation, opcua-read/write/subscribe vollständig implementiert, 186 Tests grün |
+| M3 | 2026-04-15 | `opcua-folder`/`opcua-variable` vervollständigt, Context-Bridge Typprüfung (`BadTypeMismatch`), NodeSet-Import im Server-Config, Sample-NodeSet ergänzt, 189 Tests grün |
 
 ---
 
@@ -103,28 +104,28 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 **Ziel:** Node-RED kann einen OPC UA Server mit programmatisch aufgebautem Adressraum hosten. Variablen sind bidirektional mit dem Node-RED Flow/Global-Context verknüpft. NodeSet2.xml-Import funktioniert.
 
 **WPs:** WP-S-2, WP-S-3  
-**Status:** ⬜ Offen
+**Status:** ✅ Abgeschlossen (2026-04-15)
 
 ### Enthaltene Deliverables
 
 | Deliverable | Datei | Status |
 |---|---|---|
-| opcua-folder (vollständig) | `nodes/server/opcua-folder/opcua-folder.js` + `.html` | ⬜ |
-| opcua-variable (vollständig) | `nodes/server/opcua-variable/opcua-variable.js` + `.html` | ⬜ |
-| Context Bridge (vollständig) | `lib/server/context-bridge.js` | ⬜ |
-| NodeSet Importer (vollständig) | `lib/server/nodeset-importer.js` | ⬜ |
-| Context Bridge Unit-Tests | `lib/server/context-bridge.test.js` | ⬜ |
-| NodeSet Importer Tests | `lib/server/nodeset-importer.test.js` | ⬜ |
-| Beispiel NodeSet2.xml | `test/fixtures/sample.NodeSet2.xml` | ⬜ |
-| Server Lifecycle Integration-Test | `test/integration/server-lifecycle.test.js` | ⬜ |
+| opcua-folder (vollständig) | `nodes/server/opcua-folder/opcua-folder.js` + `.html` | ✅ |
+| opcua-variable (vollständig) | `nodes/server/opcua-variable/opcua-variable.js` + `.html` | ✅ |
+| Context Bridge (vollständig) | `lib/server/context-bridge.js` | ✅ |
+| NodeSet Importer (vollständig) | `lib/server/nodeset-importer.js` | ✅ |
+| Context Bridge Unit-Tests | `lib/server/context-bridge.test.js` | ✅ |
+| NodeSet Importer Tests | `lib/server/nodeset-importer.test.js` | ✅ |
+| Beispiel NodeSet2.xml | `test/fixtures/sample.NodeSet2.xml` | ✅ |
+| Server Lifecycle Integration-Test | `test/integration/server-lifecycle.test.js` | ✅ |
 
 ### Akzeptanzkriterien M3
 
-- [ ] OPC UA Client kann Variable lesen, die per `flow.set()` gesetzt wurde
-- [ ] OPC UA Client schreibt Variable → `flow.get()` gibt neuen Wert zurück
-- [ ] Gültige NodeSet2.xml wird ohne Fehler eingelesen
-- [ ] Fehlerhafte NodeSet2.xml wirft Exception, Node-RED bleibt stabil
-- [ ] Path-Traversal-Eingaben in NodeSet-Pfad werden abgelehnt
+- [x] OPC UA Client kann Variable lesen, die per `flow.set()` gesetzt wurde
+- [x] OPC UA Client schreibt Variable → `flow.get()` gibt neuen Wert zurück
+- [x] Gültige NodeSet2.xml wird ohne Fehler eingelesen
+- [x] Fehlerhafte NodeSet2.xml wirft Exception, Node-RED bleibt stabil
+- [x] Path-Traversal-Eingaben in NodeSet-Pfad werden abgelehnt
 
 ---
 

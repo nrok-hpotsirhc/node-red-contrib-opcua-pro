@@ -6,6 +6,7 @@ module.exports = function (RED) {
   function OpcuaFolder(config) {
     RED.nodes.createNode(this, config);
     const node = this;
+    node.folder = null;
 
     node.serverConfig = RED.nodes.getNode(config.server);
     if (!node.serverConfig) {
@@ -13,22 +14,43 @@ module.exports = function (RED) {
       return;
     }
 
-    node.serverConfig.on('addressSpaceReady', (addressSpace) => {
+    const setupFolder = (addressSpace) => {
       try {
         const namespace = addressSpace.getOwnNamespace();
-        const parent    = config.parentNodeId
-          ? addressSpace.findNode(config.parentNodeId)
-          : addressSpace.rootFolder.objects;
+        let parent = addressSpace.rootFolder.objects;
 
-        // TODO WP-S-2: Create folder and expose reference for child nodes
-        // node.folder = namespace.addFolder(parent, { browseName: config.browseName });
+        if (config.parentFolder) {
+          const parentFolderNode = RED.nodes.getNode(config.parentFolder);
+          if (parentFolderNode?.folder) {
+            parent = parentFolderNode.folder;
+          }
+        } else if (config.parentNodeId) {
+          parent = addressSpace.findNode(config.parentNodeId) || addressSpace.rootFolder.objects;
+        }
+
+        node.folder = namespace.addFolder(parent, {
+          browseName: config.browseName || node.name || 'Folder',
+          nodeId: config.nodeId || undefined
+        });
         node.status({ fill: 'green', shape: 'dot', text: config.browseName });
       } catch (err) {
         node.error(`Failed to create folder: ${err.message}`);
       }
-    });
+    };
 
-    node.on('close', (_removed, done) => done());
+    node.serverConfig.on('addressSpaceReady', setupFolder);
+    if (node.serverConfig.addressSpace) {
+      setupFolder(node.serverConfig.addressSpace);
+    }
+
+    node.on('close', (removed, done) => {
+      node.serverConfig.removeListener('addressSpaceReady', setupFolder);
+      if (removed && node.folder?.dispose) {
+        node.folder.dispose();
+        node.folder = null;
+      }
+      done();
+    });
   }
 
   RED.nodes.registerType('opcua-folder', OpcuaFolder);

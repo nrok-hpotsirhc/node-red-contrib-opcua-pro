@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<UANodeSet
+  xmlns="http://opcfoundation.org/UA/2011/03/UANodeSet.xsd"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  LastModified="2026-04-15T00:00:00Z">
+  <NamespaceUris>
+    <Uri>urn:node-red:opcua:sample</Uri>
+  </NamespaceUris>
+</UANodeSet>
