@@ -16,11 +16,14 @@ function parseArgumentDefs(raw) {
   try {
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.map(arg => ({
-      name:        String(arg.name || ''),
-      description: arg.description || '',
-      dataType:    DataType[arg.dataType] !== undefined ? DataType[arg.dataType] : DataType.Variant
-    }));
+    return parsed.map(arg => {
+      const resolvedType = DataType[arg.dataType];
+      return {
+        name:        String(arg.name || ''),
+        description: arg.description || '',
+        dataType:    resolvedType !== undefined ? resolvedType : DataType.Variant
+      };
+    });
   } catch (_) {
     return [];
   }
@@ -77,7 +80,7 @@ module.exports = function (RED) {
           outputArguments: outputArgumentDefs
         });
 
-        method.bindMethod((inputArguments, context, callback) => {
+        method.bindMethod((inputArguments, _context, callback) => {
           const correlationId = crypto.randomUUID();
 
           const timeout = setTimeout(() => {
