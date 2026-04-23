@@ -17,3 +17,6 @@ Thumbs.db
 
 # Internal research documents — must not be published
 Recherche.txt
+
+# Generated test reports may contain absolute local paths and host information
+test-report.json

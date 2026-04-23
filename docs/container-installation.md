@@ -74,7 +74,7 @@ Example for WSL with a Windows workspace mounted under `/mnt/c/...`:
 
 ```bash
 docker cp \
-  "/mnt/c/Users/w010859/OneDrive - Weidmueller Interface GmbH & Co. KG/Dokumente/99_Diverses/33_Node-Red OPC UA/." \
+  "/mnt/c/path/to/your/node-red-contrib-opcua-pro/." \
   mynodered:/data/dev/node-red-contrib-opcua-pro
 ```
 
@@ -125,7 +125,7 @@ If you changed the code in this repository, refresh the copy inside the containe
 docker exec mynodered sh -lc 'rm -rf /data/dev/node-red-contrib-opcua-pro && mkdir -p /data/dev'
 
 docker cp \
-  "/mnt/c/Users/w010859/OneDrive - Weidmueller Interface GmbH & Co. KG/Dokumente/99_Diverses/33_Node-Red OPC UA/." \
+  "/mnt/c/path/to/your/node-red-contrib-opcua-pro/." \
   mynodered:/data/dev/node-red-contrib-opcua-pro
 
 docker exec mynodered sh -lc 'cd /data && npm install ./dev/node-red-contrib-opcua-pro'
