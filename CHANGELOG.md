@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — Milestone M7 (Server Configuration Comfort)
+
+#### WP-S-6 — Server Security & Identity Configuration
+- **Security Policies / Security Modes**: Multi-select in `opcua-server-config` UI for `None`, `Basic128Rsa15`, `Basic256`, `Basic256Sha256`, `Aes128_Sha256_RsaOaep`, `Aes256_Sha256_RsaPss` and modes `None`, `Sign`, `SignAndEncrypt`; applied via `buildSecurityOptions()` to `OPCUAServer`.
+- **Allow Anonymous Toggle**: Checkbox `allowAnonymous` in the server-config dialog maps directly to the OPC UA server option.
+- **User/Password Authentication** (`lib/server/user-manager.js`): `parseUsers`, `createUserManager`, `buildUserManagerFromCredentials` — encrypted storage via Node-RED `credentials` (`users: { type: 'text' }`) with constant-time comparison and default role `AuthenticatedUser`.
+- **Server Identity**: Configurable `applicationUri` (auto-generated as `urn:<hostname>:NodeRED:<productName>` when empty), `productUri`, `manufacturerName`, `softwareVersion`, `buildNumber` propagated to `buildInfo` and `serverInfo`.
+- **Resource Limits**: `maxSessions`, `maxSubscriptions`, `maxMonitoredItems`, `sessionTimeout`, `minSamplingInterval` wired to `serverCapabilities.operationLimits` + `maxConnectionsPerEndpoint` + `defaultSessionTimeout`.
+- **Endpoint URL Preview**: Live-rendered `opc.tcp://HOST:PORT/PATH` in the editor dialog with clipboard-copy button.
+- **Server Certificate Download Route**: `GET /opcua-admin/server-pki/own-cert?configId=<id>` streams the server's own `.pem`/`.der` certificate with `application/pkix-cert` + `Content-Disposition` attachment headers.
+
+#### WP-S-7 — Enhanced Variable Model
+- **Extended attributes on `opcua-variable`**: `description`, `accessLevel`, `userAccessLevel` (pipe/comma-separated `AccessLevelFlag` names or numeric bitmask), `historizing` (adds `HistoryRead` bit), `valueRank` (`Scalar`/`OneDimension`/`TwoDimensions`/`OneOrMoreDimensions`), `arrayDimensions`, `EURange` (low/high), `EngineeringUnits`.
+- **Access-Level Enforcement**: Setter returns `BadUserAccessDenied` when `CurrentWrite` is not set in both `accessLevel` and `userAccessLevel`.
+- **UI**: `opcua-variable` editor dialog extended with all new fields including a `valueRank` dropdown.
+
+### Notes
+- Total test count: **509 passing** (added ≈30 new tests across `user-manager.test.js`, `context-bridge.test.js`, `opcua-server-config.test.js`).
+- Module export `nodes/server/opcua-server-config/opcua-server-config.js`:`_internals` exposes `buildSecurityOptions`, `buildIdentityOptions`, `buildResourceLimits`, `POLICY_MAP`, `MODE_MAP` for unit tests.
+
 ## [0.1.0] — 2026-04-16
 
 ### Added

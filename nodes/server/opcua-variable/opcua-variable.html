@@ -18,7 +18,17 @@
         contextKey: { value: '', required: true },
         defaultValue: { value: '' },
         triggerOnWrite: { value: false },
-        minimumSamplingInterval: { value: 1000 }
+        minimumSamplingInterval: { value: 1000 },
+        // WP-S-7 (M7): Extended variable model
+        description:      { value: '' },
+        accessLevel:      { value: 'CurrentRead|CurrentWrite' },
+        userAccessLevel:  { value: '' },
+        historizing:      { value: false },
+        valueRank:        { value: -1 },
+        arrayDimensions:  { value: '' },
+        euRangeLow:       { value: '' },
+        euRangeHigh:      { value: '' },
+        engineeringUnits: { value: '' }
       },
       inputs: 0,
       outputs: 1,
@@ -101,6 +111,47 @@
   <div class="form-row">
     <label for="node-input-minimumSamplingInterval"><i class="fa fa-clock-o"></i> Min Sampling (ms)</label>
     <input type="number" id="node-input-minimumSamplingInterval" min="0" placeholder="1000">
+  </div>
+
+  <hr/>
+  <!-- WP-S-7 (M7): Extended Variable Attributes -->
+  <div class="form-row">
+    <label for="node-input-description"><i class="fa fa-info-circle"></i> Description</label>
+    <input type="text" id="node-input-description" placeholder="Human-readable description (optional)">
+  </div>
+  <div class="form-row">
+    <label for="node-input-accessLevel"><i class="fa fa-unlock"></i> Access Level</label>
+    <input type="text" id="node-input-accessLevel" placeholder="CurrentRead|CurrentWrite">
+  </div>
+  <div class="form-row">
+    <label for="node-input-userAccessLevel"><i class="fa fa-user-o"></i> User Access Level</label>
+    <input type="text" id="node-input-userAccessLevel" placeholder="Defaults to Access Level">
+  </div>
+  <div class="form-row">
+    <label for="node-input-historizing"><i class="fa fa-history"></i> Historizing</label>
+    <input type="checkbox" id="node-input-historizing" style="display:inline-block; width:auto; vertical-align:top;">
+  </div>
+  <div class="form-row">
+    <label for="node-input-valueRank"><i class="fa fa-th"></i> Value Rank</label>
+    <select id="node-input-valueRank">
+      <option value="-1">Scalar (-1)</option>
+      <option value="1">OneDimension (1)</option>
+      <option value="2">TwoDimensions (2)</option>
+      <option value="0">OneOrMoreDimensions (0)</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-arrayDimensions"><i class="fa fa-arrows-h"></i> Array Dimensions</label>
+    <input type="text" id="node-input-arrayDimensions" placeholder="e.g. 10 (for 1D) or 4,4 (for 2D)">
+  </div>
+  <div class="form-row">
+    <label><i class="fa fa-area-chart"></i> EU Range</label>
+    <input type="number" id="node-input-euRangeLow" placeholder="low" style="width:45%;">
+    <input type="number" id="node-input-euRangeHigh" placeholder="high" style="width:45%;">
+  </div>
+  <div class="form-row">
+    <label for="node-input-engineeringUnits"><i class="fa fa-thermometer-half"></i> Eng. Units</label>
+    <input type="text" id="node-input-engineeringUnits" placeholder="e.g. °C, bar, rpm">
   </div>
 </script>
 

@@ -79,16 +79,41 @@ module.exports = function (RED) {
 
         const parsedDefault = parseDefaultValue(config.defaultValue, config.dataType || 'Double');
 
+        // WP-S-7 (M7): Optional array-dimensions / EURange / EngineeringUnits
+        const arrayDimensions = typeof config.arrayDimensions === 'string' && config.arrayDimensions.trim()
+          ? config.arrayDimensions.split(/[,\s]+/).map(n => parseInt(n, 10)).filter(Number.isFinite)
+          : Array.isArray(config.arrayDimensions) ? config.arrayDimensions : undefined;
+
+        let euRange;
+        if (config.euRangeLow !== undefined && config.euRangeLow !== '' &&
+            config.euRangeHigh !== undefined && config.euRangeHigh !== '') {
+          const low  = parseFloat(config.euRangeLow);
+          const high = parseFloat(config.euRangeHigh);
+          if (Number.isFinite(low) && Number.isFinite(high)) euRange = { low, high };
+        }
+
+        const engineeringUnits = config.engineeringUnits && String(config.engineeringUnits).trim()
+          ? String(config.engineeringUnits).trim()
+          : undefined;
+
         node.variable = createVariableBinding(
           addressSpace.getOwnNamespace(),
           parentNode,
           {
-            browseName: config.browseName || node.name || 'Variable',
-            dataType: config.dataType || 'Double',
-            contextKey: config.contextKey,
+            browseName:  config.browseName || node.name || 'Variable',
+            dataType:    config.dataType   || 'Double',
+            contextKey:  config.contextKey,
             defaultValue: parsedDefault,
             triggerOnWrite: Boolean(config.triggerOnWrite),
-            nodeId: config.nodeId,
+            nodeId:      config.nodeId,
+            description: config.description || undefined,
+            accessLevel:     config.accessLevel     || undefined,
+            userAccessLevel: config.userAccessLevel || undefined,
+            historizing:     Boolean(config.historizing),
+            valueRank:       config.valueRank,
+            arrayDimensions,
+            euRange,
+            engineeringUnits,
             minimumSamplingInterval: config.minimumSamplingInterval != null
               ? parseInt(config.minimumSamplingInterval, 10)
               : 1000

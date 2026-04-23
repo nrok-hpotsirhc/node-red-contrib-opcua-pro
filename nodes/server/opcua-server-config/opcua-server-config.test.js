@@ -791,3 +791,212 @@ describe('Server PKI HTTP Routes (WP-S-5)', () => {
     });
   });
 });
+
+// ─── WP-S-6 (M7): buildSecurityOptions / Identity / ResourceLimits ───────────
+
+describe('WP-S-6 (M7): buildSecurityOptions / buildIdentityOptions / buildResourceLimits', () => {
+  const { _internals } = require('./opcua-server-config');
+  const { buildSecurityOptions, buildIdentityOptions, buildResourceLimits, POLICY_MAP, MODE_MAP } = _internals;
+  const { MessageSecurityMode, SecurityPolicy } = require('node-opcua');
+
+  it('exports the maps and helpers', () => {
+    assert.strictEqual(typeof buildSecurityOptions, 'function');
+    assert.strictEqual(typeof buildIdentityOptions, 'function');
+    assert.strictEqual(typeof buildResourceLimits, 'function');
+    assert.strictEqual(POLICY_MAP.None, SecurityPolicy.None);
+    assert.strictEqual(MODE_MAP.SignAndEncrypt, MessageSecurityMode.SignAndEncrypt);
+  });
+
+  it('returns allowAnonymous=true by default', () => {
+    const opts = buildSecurityOptions({});
+    assert.strictEqual(opts.allowAnonymous, true);
+  });
+
+  it('honours allowAnonymous=false (boolean and string)', () => {
+    assert.strictEqual(buildSecurityOptions({ allowAnonymous: false }).allowAnonymous, false);
+    assert.strictEqual(buildSecurityOptions({ allowAnonymous: 'false' }).allowAnonymous, false);
+  });
+
+  it('maps array of policy names to SecurityPolicy values', () => {
+    const opts = buildSecurityOptions({ securityPolicies: ['None', 'Basic256Sha256'] });
+    assert.deepStrictEqual(opts.securityPolicies, [SecurityPolicy.None, SecurityPolicy.Basic256Sha256]);
+  });
+
+  it('maps comma-separated policy string to SecurityPolicy values', () => {
+    const opts = buildSecurityOptions({ securityPolicies: 'None, Basic256Sha256' });
+    assert.deepStrictEqual(opts.securityPolicies, [SecurityPolicy.None, SecurityPolicy.Basic256Sha256]);
+  });
+
+  it('drops unknown policy names silently', () => {
+    const opts = buildSecurityOptions({ securityPolicies: ['None', 'BogusPolicy'] }); // TEST DATA
+    assert.deepStrictEqual(opts.securityPolicies, [SecurityPolicy.None]);
+  });
+
+  it('omits securityPolicies key when no valid policies provided', () => {
+    const opts = buildSecurityOptions({ securityPolicies: ['Bogus'] }); // TEST DATA
+    assert.ok(!('securityPolicies' in opts));
+  });
+
+  it('maps SecurityModes correctly', () => {
+    const opts = buildSecurityOptions({ securityModes: ['Sign', 'SignAndEncrypt'] });
+    assert.deepStrictEqual(opts.securityModes, [MessageSecurityMode.Sign, MessageSecurityMode.SignAndEncrypt]);
+  });
+
+  it('builds default identity with auto-generated applicationUri', () => {
+    const ident = buildIdentityOptions({}, 'TestServer'); // TEST DATA
+    assert.strictEqual(ident.buildInfo.productName, 'TestServer');
+    assert.ok(ident.buildInfo.buildDate instanceof Date);
+    assert.ok(/^urn:.+:NodeRED:TestServer$/.test(ident.serverInfo.applicationUri));
+  });
+
+  it('forwards explicit identity fields and productUri', () => {
+    const ident = buildIdentityOptions({
+      applicationUri:   'urn:my:uri',                 // TEST DATA
+      productUri:       'http://vendor/product',      // TEST DATA
+      manufacturerName: 'MyVendor',                    // TEST DATA
+      softwareVersion:  '1.2.3',                       // TEST DATA
+      buildNumber:      '42'                           // TEST DATA
+    }, 'TestServer'); // TEST DATA
+    assert.strictEqual(ident.serverInfo.applicationUri, 'urn:my:uri');
+    assert.strictEqual(ident.serverInfo.productUri,     'http://vendor/product');
+    assert.strictEqual(ident.buildInfo.manufacturerName,'MyVendor');
+    assert.strictEqual(ident.buildInfo.softwareVersion, '1.2.3');
+    assert.strictEqual(ident.buildInfo.buildNumber,     '42');
+  });
+
+  it('returns empty object when no resource limits configured', () => {
+    assert.deepStrictEqual(buildResourceLimits({}), {});
+  });
+
+  it('builds serverCapabilities + maxConnectionsPerEndpoint when limits set', () => {
+    const lim = buildResourceLimits({
+      maxSessions: '50',
+      maxSubscriptions: 20,
+      maxMonitoredItems: 500,
+      sessionTimeout: 30000,
+      minSamplingInterval: 250
+    });
+    assert.strictEqual(lim.maxConnectionsPerEndpoint, 50);
+    assert.strictEqual(lim.defaultSessionTimeout, 30000);
+    assert.strictEqual(lim.serverCapabilities.maxSessions, 50);
+    assert.strictEqual(lim.serverCapabilities.maxSubscriptions, 20);
+    assert.strictEqual(lim.serverCapabilities.maxMonitoredItems, 500);
+    assert.strictEqual(lim.serverCapabilities.operationLimits.minSupportedSampleRate, 250);
+  });
+
+  it('ignores zero / negative / non-numeric limits', () => {
+    const lim = buildResourceLimits({
+      maxSessions: '0',          // TEST DATA — invalid
+      maxSubscriptions: 'abc',   // TEST DATA — invalid
+      maxMonitoredItems: -1      // TEST DATA — invalid
+    });
+    assert.deepStrictEqual(lim, {});
+  });
+});
+
+// ─── WP-S-6 (M7): Server cert download route ─────────────────────────────────
+
+describe('WP-S-6 (M7): GET /opcua-admin/server-pki/own-cert', () => {
+  let RED;
+  let downloadHandler;
+
+  before(() => {
+    RED = makeRedMock();
+    delete require.cache[require.resolve('./opcua-server-config')];
+    require('./opcua-server-config')(RED);
+    downloadHandler = RED._routes.get['/opcua-admin/server-pki/own-cert'];
+  });
+
+  function makeBufferRes() {
+    const res = {
+      statusCode: 200,
+      body: null,
+      headers: {},
+      status(c) { res.statusCode = c; return res; },
+      json(b)   { res.body = b; return res; },
+      send(b)   { res.body = b; return res; },
+      setHeader(k, v) { res.headers[k] = v; }
+    };
+    return res;
+  }
+
+  it('registers the download route', () => {
+    assert.strictEqual(typeof downloadHandler, 'function');
+  });
+
+  it('returns 400 for missing configId', () => {
+    const res = makeBufferRes();
+    downloadHandler({ query: {} }, res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  it('returns 400 for invalid configId', () => {
+    const res = makeBufferRes();
+    downloadHandler({ query: { configId: '../etc' } }, res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  it('returns 404 when config node is unknown', () => {
+    const res = makeBufferRes();
+    downloadHandler({ query: { configId: 'doesnotexist' } }, res);
+    assert.strictEqual(res.statusCode, 404);
+  });
+
+  it('returns 404 when no certificate file exists', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'srv-owncert-empty-'));
+    RED._nodeStore['srvowncert1'] = { pkiDir: tmp };
+    const res = makeBufferRes();
+    downloadHandler({ query: { configId: 'srvowncert1' } }, res);
+    assert.strictEqual(res.statusCode, 404);
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+
+  it('streams the certificate buffer with correct headers', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'srv-owncert-ok-'));
+    const certDir = path.join(tmp, 'own', 'certs');
+    fs.mkdirSync(certDir, { recursive: true });
+    const certData = Buffer.from('FAKE-CERT-DATA'); // TEST DATA
+    fs.writeFileSync(path.join(certDir, 'server.der'), certData);
+
+    RED._nodeStore['srvowncert2'] = { pkiDir: tmp };
+    const res = makeBufferRes();
+    downloadHandler({ query: { configId: 'srvowncert2' } }, res);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.headers['Content-Type'], 'application/pkix-cert');
+    assert.ok(res.headers['Content-Disposition'].includes('server.der'));
+    assert.ok(Buffer.isBuffer(res.body));
+    assert.strictEqual(res.body.toString(), 'FAKE-CERT-DATA');
+
+    fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});
+
+// ─── WP-S-6 (M7): Credentials registration ───────────────────────────────────
+
+describe('WP-S-6 (M7): credentials registration', () => {
+  it('registers users field as encrypted text credential', () => {
+    // The third arg to registerType is { credentials: { users: { type: 'text' } } }.
+    // We capture it by overriding registerType with a spy.
+    const sinon = require('sinon');
+    const RED = (function () {
+      const m = makeRedMock();
+      m.nodes.registerType = sinon.spy(m.nodes.registerType);
+      return m;
+    })();
+    delete require.cache[require.resolve('./opcua-server-config')];
+    require('./opcua-server-config')(RED);
+
+    const call = RED.nodes.registerType.getCalls().find(c => c.args[0] === 'opcua-server-config');
+    assert.ok(call, 'registerType must be called for opcua-server-config');
+    const opts = call.args[2];
+    assert.ok(opts && opts.credentials && opts.credentials.users, 'credentials.users must be declared');
+    assert.strictEqual(opts.credentials.users.type, 'text');
+  });
+});

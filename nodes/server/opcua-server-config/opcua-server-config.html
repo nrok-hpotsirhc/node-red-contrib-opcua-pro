@@ -5,17 +5,83 @@
     RED.nodes.registerType('opcua-server-config', {
       category: 'config',
       defaults: {
-        name:        { value: '' },
-        port:        { value: 4840, validate: RED.validators.number(), required: true },
-        resourcePath:{ value: '/UA/NodeRED' },
-        productName: { value: 'Node-RED OPC UA Server' },
-        nodeSets:    { value: '' }
+        name:              { value: '' },
+        port:              { value: 4840, validate: RED.validators.number(), required: true },
+        resourcePath:      { value: '/UA/NodeRED' },
+        productName:       { value: 'Node-RED OPC UA Server' },
+        nodeSets:          { value: '' },
+        // WP-S-6: Identity
+        applicationUri:    { value: '' },
+        productUri:        { value: '' },
+        manufacturerName:  { value: 'Node-RED Community' },
+        softwareVersion:   { value: '0.1.0' },
+        buildNumber:       { value: '1' },
+        // WP-S-6: Security
+        securityPolicies:  { value: ['None', 'Basic256Sha256'] },
+        securityModes:     { value: ['None', 'SignAndEncrypt'] },
+        allowAnonymous:    { value: true },
+        // WP-S-6: Resource limits
+        maxSessions:         { value: 100,  validate: RED.validators.number(true) },
+        maxSubscriptions:    { value: 50,   validate: RED.validators.number(true) },
+        maxMonitoredItems:   { value: 1000, validate: RED.validators.number(true) },
+        sessionTimeout:      { value: 60000, validate: RED.validators.number(true) },
+        minSamplingInterval: { value: 100,  validate: RED.validators.number(true) }
+      },
+      credentials: {
+        // JSON array of { username, password, role } — encrypted by Node-RED.
+        users: { type: 'text' }
       },
       label: function() {
         return this.name || ('OPC UA Server :' + this.port);
       },
       oneditprepare: function() {
         var nodeId = this.id;
+
+        // ── Security policy / mode checkbox groups ──────────────────────
+        var node = this;
+        var $policyBox = $('#opcua-server-policies');
+        ['None','Basic128Rsa15','Basic256','Basic256Sha256','Aes128_Sha256_RsaOaep','Aes256_Sha256_RsaPss'].forEach(function(p) {
+          var checked = (node.securityPolicies || []).indexOf(p) >= 0 ? 'checked' : '';
+          $policyBox.append('<label style="display:inline-block;margin-right:12px;font-weight:normal;"><input type="checkbox" data-policy="' + p + '" ' + checked + '> ' + p + '</label>');
+        });
+        var $modeBox = $('#opcua-server-modes');
+        ['None','Sign','SignAndEncrypt'].forEach(function(m) {
+          var checked = (node.securityModes || []).indexOf(m) >= 0 ? 'checked' : '';
+          $modeBox.append('<label style="display:inline-block;margin-right:12px;font-weight:normal;"><input type="checkbox" data-mode="' + m + '" ' + checked + '> ' + m + '</label>');
+        });
+
+        $('#node-config-input-allowAnonymous').prop('checked', node.allowAnonymous !== false);
+
+        // ── Endpoint URL preview ────────────────────────────────────────
+        function updateEndpointPreview() {
+          var port = $('#node-config-input-port').val() || '4840';
+          var rp   = $('#node-config-input-resourcePath').val() || '/UA/NodeRED';
+          var host = window.location.hostname || 'localhost';
+          $('#opcua-endpoint-preview').text('opc.tcp://' + host + ':' + port + rp);
+        }
+        updateEndpointPreview();
+        $('#node-config-input-port, #node-config-input-resourcePath').on('input', updateEndpointPreview);
+
+        $('#opcua-endpoint-copy').on('click', function(ev) {
+          ev.preventDefault();
+          var text = $('#opcua-endpoint-preview').text();
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+              RED.notify('Endpoint URL copied', 'success');
+            });
+          } else {
+            var ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); RED.notify('Endpoint URL copied', 'success'); }
+            finally { document.body.removeChild(ta); }
+          }
+        });
+
+        // ── Download server certificate ─────────────────────────────────
+        $('#opcua-download-cert').on('click', function(ev) {
+          ev.preventDefault();
+          window.open('opcua-admin/server-pki/own-cert?configId=' + encodeURIComponent(nodeId), '_blank');
+        });
 
         // WP-S-5 (M5): Server PKI Dashboard
         function loadRejectedClients() {
@@ -70,6 +136,16 @@
 
         loadRejectedClients();
         loadTrustedClients();
+      },
+      oneditsave: function() {
+        // Collect policy/mode selections from checkbox state back into the node.
+        this.securityPolicies = $('#opcua-server-policies input:checked').map(function() {
+          return $(this).data('policy');
+        }).get();
+        this.securityModes = $('#opcua-server-modes input:checked').map(function() {
+          return $(this).data('mode');
+        }).get();
+        this.allowAnonymous = $('#node-config-input-allowAnonymous').is(':checked');
       }
     });
   }());
@@ -96,6 +172,83 @@
     <label for="node-config-input-nodeSets"><i class="fa fa-file-code-o"></i> NodeSet2.xml Paths</label>
     <input type="text" id="node-config-input-nodeSets" placeholder="/path/to/companion.NodeSet2.xml (comma-separated)">
   </div>
+
+  <hr/>
+  <!-- WP-S-6 (M7): Endpoint URL Preview -->
+  <div class="form-row">
+    <label><i class="fa fa-link"></i> Endpoint URL</label>
+    <code id="opcua-endpoint-preview" style="display:inline-block;padding:4px 8px;background:#f6f6f6;border:1px solid #ddd;border-radius:3px;min-width:60%;">opc.tcp://…</code>
+    <button id="opcua-endpoint-copy" type="button" class="red-ui-button red-ui-button-small" style="margin-left:6px;"><i class="fa fa-clipboard"></i> Copy</button>
+    <button id="opcua-download-cert" type="button" class="red-ui-button red-ui-button-small" style="margin-left:6px;"><i class="fa fa-download"></i> Download Server Cert</button>
+  </div>
+
+  <hr/>
+  <!-- WP-S-6 (M7): Identity -->
+  <div class="form-row"><label><i class="fa fa-id-card"></i> Identity</label></div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-applicationUri" style="width:140px;">Application URI</label>
+    <input type="text" id="node-config-input-applicationUri" placeholder="urn:HOST:NodeRED:Server (auto)" style="width:calc(100% - 150px);">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-productUri" style="width:140px;">Product URI</label>
+    <input type="text" id="node-config-input-productUri" placeholder="http://vendor.example/product" style="width:calc(100% - 150px);">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-manufacturerName" style="width:140px;">Manufacturer</label>
+    <input type="text" id="node-config-input-manufacturerName" style="width:calc(100% - 150px);">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-softwareVersion" style="width:140px;">Software Version</label>
+    <input type="text" id="node-config-input-softwareVersion" style="width:120px;">
+    <label for="node-config-input-buildNumber" style="width:100px;margin-left:20px;">Build Number</label>
+    <input type="text" id="node-config-input-buildNumber" style="width:120px;">
+  </div>
+
+  <hr/>
+  <!-- WP-S-6 (M7): Security -->
+  <div class="form-row"><label><i class="fa fa-shield"></i> Security Policies</label></div>
+  <div class="form-row" id="opcua-server-policies" style="margin-left:10px;"></div>
+  <div class="form-row"><label><i class="fa fa-lock"></i> Message Security Modes</label></div>
+  <div class="form-row" id="opcua-server-modes" style="margin-left:10px;"></div>
+
+  <div class="form-row" style="margin-left:10px;">
+    <label style="width:auto;font-weight:normal;">
+      <input type="checkbox" id="node-config-input-allowAnonymous" style="margin-right:6px;">
+      Allow anonymous access
+    </label>
+  </div>
+
+  <!-- WP-S-6 (M7): Username/password credentials -->
+  <div class="form-row"><label><i class="fa fa-users"></i> Users</label></div>
+  <div class="form-row" style="margin-left:10px;">
+    <textarea id="node-config-input-users" rows="4" style="width:100%;font-family:monospace;" placeholder='[{"username":"admin","password":"secret","role":"Engineer"}]'></textarea>
+    <div style="color:#888;font-size:0.85em;">JSON array of <code>{ username, password, role }</code>. Stored encrypted by Node-RED. Leave empty to disable username/password auth.</div>
+  </div>
+
+  <hr/>
+  <!-- WP-S-6 (M7): Resource Limits -->
+  <div class="form-row"><label><i class="fa fa-tachometer"></i> Resource Limits</label></div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-maxSessions" style="width:180px;">Max Sessions</label>
+    <input type="number" id="node-config-input-maxSessions" min="1" style="width:100px;">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-maxSubscriptions" style="width:180px;">Max Subscriptions</label>
+    <input type="number" id="node-config-input-maxSubscriptions" min="1" style="width:100px;">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-maxMonitoredItems" style="width:180px;">Max Monitored Items</label>
+    <input type="number" id="node-config-input-maxMonitoredItems" min="1" style="width:100px;">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-sessionTimeout" style="width:180px;">Session Timeout (ms)</label>
+    <input type="number" id="node-config-input-sessionTimeout" min="1000" style="width:100px;">
+  </div>
+  <div class="form-row" style="margin-left:10px;">
+    <label for="node-config-input-minSamplingInterval" style="width:180px;">Min Sampling Interval (ms)</label>
+    <input type="number" id="node-config-input-minSamplingInterval" min="0" style="width:100px;">
+  </div>
+
   <hr/>
   <!-- WP-S-5 (M5): Server PKI Dashboard -->
   <div class="form-row">
@@ -129,4 +282,8 @@
   <h3>PKI &amp; Security</h3>
   <p>A self-signed X.509 server certificate is automatically generated on first startup. Unknown client certificates are placed in the <strong>rejected</strong> store. Use the "Trust" button in the Security Dashboard to accept client certificates.</p>
   <p>Trust operations use atomic <code>fs.renameSync</code> — no inconsistent intermediate state possible.</p>
+  <h3>Authentication</h3>
+  <p>Add username/password entries as a JSON array in the <strong>Users</strong> field. Passwords are encrypted by Node-RED credentials storage. Uncheck <em>Allow anonymous access</em> to require authentication for all clients.</p>
+  <h3>Resource Limits</h3>
+  <p>Protect the server from denial-of-service by capping the number of sessions, subscriptions and monitored items. Defaults are conservative but production-ready.</p>
 </script>

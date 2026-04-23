@@ -17,7 +17,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
 | [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
 | [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ✅ Abgeschlossen |
-| [M7 — Server Configuration Comfort](#m7--server-configuration-comfort) | Security-/Auth-UI, Server-Identität, Ressourcen-Limits, erweiterte Variablen-Attribute | WP-S-6, WP-S-7 | ⬜ Offen |
+| [M7 — Server Configuration Comfort](#m7--server-configuration-comfort) | Security-/Auth-UI, Server-Identität, Ressourcen-Limits, erweiterte Variablen-Attribute | WP-S-6, WP-S-7 | ✅ Erledigt |
 | [M8 — Visual Server Modeling](#m8--visual-server-modeling) | Inline Address-Space-Editor, CSV/JSON-Bulk-Import, Variablen-Templates | WP-S-8 | ⬜ Offen |
 | [M9 — Server Runtime Dashboard](#m9--server-runtime-dashboard) | Live-Sessions/Subscriptions, Uptime, Event-Log, manueller Neustart | WP-S-9 | ⬜ Offen |
 | [M10 — Advanced OPC UA (Historian, A&C)](#m10--advanced-opc-ua-historian-ac) | Historical Access, Events & Alarms, Auditing | WP-S-10, WP-S-11 | ⬜ Offen |
