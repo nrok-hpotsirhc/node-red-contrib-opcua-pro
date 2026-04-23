@@ -39,6 +39,7 @@ See [AGENTS.md](AGENTS.md) for the full architecture documentation.
 
 - **Theoretical Foundations:** [docs/theoretical-foundations.md](docs/theoretical-foundations.md)
 - **Work Packages:** [docs/work-packages.md](docs/work-packages.md)
+- **Container Installation:** [docs/container-installation.md](docs/container-installation.md)
 
 ## Project Structure
 
@@ -82,6 +83,8 @@ node-red-contrib-opcua-pro/
 cd ~/.node-red
 npm install node-red-contrib-opcua-pro
 ```
+
+For Docker-based local development with Node-RED, see [docs/container-installation.md](docs/container-installation.md).
 
 ## Quick Start
 
