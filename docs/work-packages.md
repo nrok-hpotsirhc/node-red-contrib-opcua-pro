@@ -24,6 +24,12 @@ Dieses Dokument beschreibt alle Arbeitspakete (Work Packages) in vollständiger 
 - [WP-S-3: NodeSet2.xml Importer](#wp-s-3-nodeset2xml-importer)
 - [WP-S-4: RPC-Methoden & Event Handling](#wp-s-4-rpc-methoden--event-handling)
 - [WP-S-5: Server PKI & RBAC](#wp-s-5-server-pki--rbac)
+- [WP-S-6: Server Security & Identity Configuration](#wp-s-6-server-security--identity-configuration)
+- [WP-S-7: Enhanced Variable Model](#wp-s-7-enhanced-variable-model)
+- [WP-S-8: Visual Address Space Editor & Bulk Import](#wp-s-8-visual-address-space-editor--bulk-import)
+- [WP-S-9: Server Runtime Diagnostics Dashboard](#wp-s-9-server-runtime-diagnostics-dashboard)
+- [WP-S-10: Historical Access (HA)](#wp-s-10-historical-access-ha)
+- [WP-S-11: Events & Alarms (A&C)](#wp-s-11-events--alarms-ac)
 
 ### [Abhängigkeitsmatrix](#abhängigkeitsmatrix)
 ### [Definition of Done](#definition-of-done)
@@ -1012,6 +1018,379 @@ node.on('input', (msg) => {
 
 ---
 
+## WP-S-6: Server Security & Identity Configuration
+
+**Erfüllt:** REQ-S-06 (Erweiterung), Komfort-Anforderung „vollständige Server-Konfiguration über UI"  
+**Abhängigkeiten:** WP-S-1, WP-S-5  
+**Komplexität:** Hoch  
+**Meilenstein:** M7
+
+### Ziel
+
+Der `opcua-server-config` Node wird zum vollwertigen Konfigurationspunkt eines produktiven OPC UA Servers: mehrere aktivierbare Security-Policies und -Modes, konfigurierbare Authentifizierung (Anonymous/Username/X509), User-Manager, Server-Identität (ApplicationUri, Hersteller, Version, BuildNumber) und Ressourcen-Limits. Alles ohne Editieren von Code oder `settings.js`.
+
+### Deliverables
+
+| # | Deliverable | Datei |
+|---|---|---|
+| D-S-6.1 | Security-Policy-Multi-Select (None, Basic128Rsa15, Basic256, Basic256Sha256, Aes128_Sha256_RsaOaep, Aes256_Sha256_RsaPss) | `nodes/server/opcua-server-config/opcua-server-config.html` |
+| D-S-6.2 | Security-Mode-Multi-Select (None, Sign, SignAndEncrypt) | idem |
+| D-S-6.3 | Auth-Modi (Anonymous, Username, X509) + `allowAnonymous`-Toggle | idem |
+| D-S-6.4 | User-Manager (Liste Username/Passwort, optional Rolle) | `lib/server/user-manager.js` + UI-Block |
+| D-S-6.5 | Server-Identität: `applicationUri`, `manufacturerName`, `softwareVersion`, `buildNumber` | Server-Config |
+| D-S-6.6 | Ressourcen-Limits: `maxSessions`, `maxSubscriptions`, `maxMonitoredItems`, `sessionTimeout`, `minSamplingInterval` | Server-Config |
+| D-S-6.7 | Endpoint-URL-Preview + Copy-Button | Server-Config HTML |
+| D-S-6.8 | Server-Zertifikat-Download-Route (`GET /opcua-admin/server-pki/own-cert`) | Server-Config + Helper |
+| D-S-6.9 | Unit-Tests User-Manager, Password-Credential-Speicherung, Options-Mapping | `lib/server/user-manager.test.js`, `opcua-server-config.test.js` |
+
+### Technische Implementierung
+
+#### 6.1 Security-Endpoints konfigurieren
+
+```javascript
+// nodes/server/opcua-server-config/opcua-server-config.js
+const { MessageSecurityMode, SecurityPolicy } = require('node-opcua');
+
+function buildSecurityOptions(config) {
+  const policies = (config.securityPolicies || ['None', 'Basic256Sha256'])
+    .map(p => SecurityPolicy[p]).filter(Boolean);
+  const modes = (config.securityModes || ['None', 'SignAndEncrypt'])
+    .map(m => MessageSecurityMode[m]).filter(Boolean);
+  return { securityPolicies: policies, securityModes: modes, allowAnonymous: config.allowAnonymous !== false };
+}
+```
+
+#### 6.2 User-Manager mit Credential-Speicherung
+
+```javascript
+// lib/server/user-manager.js
+function createUserManager(users /* [{ username, password, role }] */) {
+  return {
+    isValidUser: (username, password) => {
+      const entry = users.find(u => u.username === username);
+      return Boolean(entry && entry.password === password);
+    },
+    getUserRole: (username) => users.find(u => u.username === username)?.role
+  };
+}
+```
+
+Passwörter werden im Node-RED-Node über `credentials` deklariert und NICHT im `config`-Objekt persistiert:
+
+```javascript
+RED.nodes.registerType('opcua-server-config', OpcuaServerConfig, {
+  credentials: {
+    users: { type: 'text' } // JSON-String mit { username, password }[]
+  }
+});
+```
+
+#### 6.3 Identität und Limits durchreichen
+
+```javascript
+node.server = new OPCUAServer({
+  port, resourcePath,
+  buildInfo: {
+    productName:      config.productName,
+    productUri:       config.productUri,
+    manufacturerName: config.manufacturerName,
+    softwareVersion:  config.softwareVersion,
+    buildNumber:      config.buildNumber,
+    buildDate:        new Date()
+  },
+  serverInfo: { applicationUri: config.applicationUri },
+  serverCapabilities: { maxSessions: parseInt(config.maxSessions,10) || 100 },
+  maxConnectionsPerEndpoint: parseInt(config.maxSessions,10) || 100,
+  userManager: createUserManager(parsedUsers),
+  ...buildSecurityOptions(config),
+  ...certOpts
+});
+```
+
+#### 6.4 Endpoint-URL-Preview
+
+```html
+<div class="form-row">
+  <label><i class="fa fa-globe"></i> Endpoint URL</label>
+  <code id="opcua-endpoint-preview" class="red-ui-text-secondary"></code>
+  <button id="opcua-endpoint-copy" type="button" class="red-ui-button red-ui-button-small">
+    <i class="fa fa-clipboard"></i> Copy
+  </button>
+</div>
+```
+
+Preview wird live aus Port + Resource Path zusammengesetzt: `opc.tcp://<host>:<port><resourcePath>`.
+
+### Akzeptanzkriterien
+
+- [ ] Mindestens zwei Endpoint-Security-Kombinationen gleichzeitig aktivierbar
+- [ ] `allowAnonymous=false` → anonymer Client wird abgewiesen (Integration-Test)
+- [ ] Username/Passwort-Login funktioniert Ende-zu-Ende (Integration-Test gegen lokalen Client)
+- [ ] Passwörter werden als Node-RED Credentials verschlüsselt gespeichert, niemals im Klartext in `flows.json`
+- [ ] `sessionTimeout`, `maxSessions` werden an `OPCUAServer`-Options durchgereicht und wirksam
+- [ ] Server-Zertifikat-Download-Route liefert exakt die Datei aus `PKI/own/certs/`, mit `Content-Type: application/pkix-cert`
+- [ ] Endpoint-URL-Preview passt sich bei Port-Änderung sofort an
+
+---
+
+## WP-S-7: Enhanced Variable Model
+
+**Erfüllt:** REQ-S-02 (Erweiterung)  
+**Abhängigkeiten:** WP-S-2  
+**Komplexität:** Mittel  
+**Meilenstein:** M7
+
+### Ziel
+
+`opcua-variable` erhält alle OPC-UA-Attribute, die für Industrie-Einsatz relevant sind: `accessLevel`, `userAccessLevel`, `historizing`, `valueRank`, `arrayDimensions`, `EURange`, `EngineeringUnits`, `description`.
+
+### Deliverables
+
+| # | Deliverable | Datei |
+|---|---|---|
+| D-S-7.1 | Erweiterte Variablen-Form (HTML) mit allen neuen Attributen | `nodes/server/opcua-variable/opcua-variable.html` |
+| D-S-7.2 | Backend-Mapping neuer Attribute auf `namespace.addVariable` | `lib/server/context-bridge.js` |
+| D-S-7.3 | EURange / EngineeringUnits als optionale Properties am Variable-Node | `context-bridge.js` |
+| D-S-7.4 | Unit-Tests für Access-Level-Enforcement und Array-Variablen | `lib/server/context-bridge.test.js`, `opcua-variable.test.js` |
+
+### Technische Implementierung
+
+```javascript
+// lib/server/context-bridge.js (Erweiterung)
+const variable = namespace.addVariable({
+  componentOf: parentNode,
+  browseName, dataType, nodeId,
+  description,
+  accessLevel:     resolveAccessLevel(config.accessLevel),      // z.B. 'CurrentRead | CurrentWrite'
+  userAccessLevel: resolveAccessLevel(config.userAccessLevel || config.accessLevel),
+  valueRank:       config.valueRank ?? -1,                      // -1 Scalar, 1 Array, 2 Matrix
+  arrayDimensions: config.arrayDimensions ?? undefined,
+  historizing:     Boolean(config.historizing),
+  minimumSamplingInterval: config.minimumSamplingInterval ?? 1000,
+  value: { get, set }
+});
+
+if (config.euRange) {
+  namespace.addVariable({
+    propertyOf: variable,
+    browseName: 'EURange',
+    dataType: 'Range',
+    value: { get: () => new Variant({ dataType: DataType.ExtensionObject, value: config.euRange }) }
+  });
+}
+```
+
+### Akzeptanzkriterien
+
+- [ ] Variable mit `accessLevel='CurrentRead'` lehnt Write mit `BadUserAccessDenied` ab
+- [ ] `valueRank=1` erzeugt Array-Variable; OPC UA Client empfängt Array korrekt
+- [ ] EURange und EngineeringUnits erscheinen als Properties unter der Variable
+- [ ] `historizing=true` setzt `AccessLevel.HistoryRead` zusätzlich
+- [ ] `description` ist im OPC UA Client-Browse sichtbar
+
+---
+
+## WP-S-8: Visual Address Space Editor & Bulk Import
+
+**Erfüllt:** Komfort-Anforderung „große Adressräume ohne 1-zu-1-Wiring modellieren"  
+**Abhängigkeiten:** WP-S-2, WP-S-7  
+**Komplexität:** Sehr hoch  
+**Meilenstein:** M8
+
+### Ziel
+
+Ein inline eingebetteter Tree-Editor im `opcua-server-config`-Dialog erlaubt, den gesamten Adressraum deklarativ zu pflegen, ohne pro Variable einen Flow-Node anzulegen. CSV- und JSON-Bulk-Import decken den Massen-Tag-Fall (SPS mit hunderten Signalen) ab. Variablen-Templates reduzieren Wiederholungen.
+
+### Deliverables
+
+| # | Deliverable | Datei |
+|---|---|---|
+| D-S-8.1 | Inline Tree-Editor (`RED.treeList` mit Add/Remove/Rename) | `nodes/server/opcua-server-config/opcua-server-config.html` |
+| D-S-8.2 | Persistenz des Tree-Models als JSON im Node-Property `addressSpaceModel` | Server-Config Backend |
+| D-S-8.3 | Laufzeit-Builder: wandelt Tree-Model beim Start in `addFolder`/`addVariable`-Calls um | `lib/server/address-space-builder.js` |
+| D-S-8.4 | CSV-Import mit definiertem Schema (path, browseName, dataType, defaultValue, contextKey, accessLevel, historizing) | `lib/server/bulk-import.js` |
+| D-S-8.5 | JSON-Import (gleicher Schema-Vorrat) | idem |
+| D-S-8.6 | Variable-Template-Engine (Template-Definition + Instanziierung über Parametrierung) | `lib/server/variable-template.js` |
+| D-S-8.7 | Export-Route `GET /opcua-admin/server-addressspace` (JSON) | Server-Config |
+| D-S-8.8 | Unit-Tests Bulk-Import (valide + invalide CSV), Template-Expansion | `lib/server/bulk-import.test.js`, `variable-template.test.js` |
+
+### Technische Implementierung
+
+#### 8.1 Tree-Model (JSON-Schema, im Flow persistiert)
+
+```json
+{
+  "folders": [
+    {
+      "browseName": "Machines",
+      "children": [
+        {
+          "browseName": "Machine1",
+          "variables": [
+            { "browseName": "Temperature", "dataType": "Double", "contextKey": "m1.temp", "accessLevel": "CurrentRead", "historizing": true },
+            { "browseName": "Speed",       "dataType": "Double", "contextKey": "m1.speed" }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### 8.2 CSV-Schema
+
+```csv
+path,browseName,dataType,defaultValue,contextKey,accessLevel,historizing
+/Machines/Machine1,Temperature,Double,20.0,m1.temp,CurrentRead|CurrentWrite,true
+/Machines/Machine1,Speed,Double,0,m1.speed,CurrentRead|CurrentWrite,false
+```
+
+#### 8.3 Fehlerhafte Zeilen protokollieren, nicht abbrechen
+
+```javascript
+function importCsv(rows) {
+  const ok = [], errors = [];
+  rows.forEach((row, i) => {
+    try { ok.push(parseRow(row)); }
+    catch (err) { errors.push({ line: i + 2, reason: err.message }); }
+  });
+  return { ok, errors };
+}
+```
+
+### Akzeptanzkriterien
+
+- [ ] Import einer CSV mit 1000 Zeilen erzeugt 1000 Variablen in < 5 s
+- [ ] Ungültige Zeilen werden mit Zeilennummer und Fehlergrund im UI gemeldet, Import läuft weiter
+- [ ] Tree-Editor speichert Änderungen in den Node-RED-Flow (persistent über Redeploy)
+- [ ] Template-Änderung propagiert zu allen Instanzen bei nächstem Deploy
+- [ ] Export-JSON kann wieder importiert werden (Round-Trip verlustfrei)
+- [ ] Doppelter `browseName` innerhalb desselben Parents wird mit klarer Fehlermeldung abgelehnt
+- [ ] Path-Traversal / Kollision mit OPC UA-Standardknoten (`NamespaceArray`, `ServerStatus`) wird verhindert
+
+---
+
+## WP-S-9: Server Runtime Diagnostics Dashboard
+
+**Erfüllt:** Komfort-Anforderung „Betriebssicht direkt im Editor"  
+**Abhängigkeiten:** WP-S-1  
+**Komplexität:** Mittel  
+**Meilenstein:** M9
+
+### Ziel
+
+Betreiber sehen Uptime, aktive Sessions, Subscriptions, Durchsatz und die letzten Events direkt im Server-Config-Dialog. Ein Restart-Button erlaubt sauberen Neustart ohne Redeploy. Ein neuer `opcua-server-diagnostics` Node emittiert Events in den Flow.
+
+### Deliverables
+
+| # | Deliverable | Datei |
+|---|---|---|
+| D-S-9.1 | Diagnostics-Collector (Uptime, Counter für Read/Write/Call/Subscribe, Session-Liste) | `lib/server/diagnostics.js` |
+| D-S-9.2 | HTTP-Routen `GET /opcua-admin/server-status`, `GET /opcua-admin/server-sessions` | Server-Config |
+| D-S-9.3 | Live-Status-Panel mit Auto-Refresh (Polling alle 2 s solange Dialog offen) | Server-Config HTML |
+| D-S-9.4 | Event-Log-Ring-Buffer (200 Einträge) + `GET /opcua-admin/server-events` | `lib/server/event-log.js` |
+| D-S-9.5 | Restart-Route `POST /opcua-admin/server-restart` mit Permission-Check | Server-Config |
+| D-S-9.6 | `opcua-server-diagnostics` Node (emittiert `msg.payload.event`) | `nodes/server/opcua-server-diagnostics/` |
+| D-S-9.7 | Unit-Tests Diagnostics, Event-Log, Restart-Sequenz | `lib/server/diagnostics.test.js`, `event-log.test.js` |
+
+### Technische Implementierung
+
+```javascript
+// lib/server/diagnostics.js
+class ServerDiagnostics {
+  constructor(server) {
+    this.server = server;
+    this.startedAt = Date.now();
+    this.counters = { reads: 0, writes: 0, calls: 0, subscribes: 0 };
+    server.on('session_activated', () => this._bump('sessionCreated'));
+    server.on('session_closed',    () => this._bump('sessionClosed'));
+  }
+  snapshot() {
+    return {
+      uptimeMs:      Date.now() - this.startedAt,
+      sessions:      this.server.currentSessionCount,
+      subscriptions: this.server.currentSubscriptionCount,
+      counters:      { ...this.counters }
+    };
+  }
+}
+```
+
+### Akzeptanzkriterien
+
+- [ ] Status-Panel zeigt Uptime und aktive Session-Anzahl mit ≤ 2 s Latenz
+- [ ] Restart-Button stoppt und startet sauber (kein EADDRINUSE bei 10 aufeinanderfolgenden Restarts)
+- [ ] `opcua-server-diagnostics` emittiert `msg.payload.event = "sessionCreated"` bei Client-Connect
+- [ ] Event-Log enthält keine Credentials und keine Zertifikat-Inhalte
+- [ ] Alle Diagnostics-Routen sind durch `RED.auth.needsPermission('opcua-server-config.read')` geschützt
+- [ ] Restart-Route erfordert `opcua-server-config.write`
+
+---
+
+## WP-S-10: Historical Access (HA)
+
+**Erfüllt:** Erweiterung REQ-S-02 für Historisierung  
+**Abhängigkeiten:** WP-S-7  
+**Komplexität:** Sehr hoch  
+**Meilenstein:** M10
+
+### Ziel
+
+Variablen mit `historizing=true` werden automatisch in einen Historian geschrieben. Der Server beantwortet `HistoryRead`-Requests (Raw, Processed). Storage-Backend ist austauschbar: Default ist ein In-Memory-Ring-Buffer, optional steht ein einfacher Disk-Storage (JSON-Lines pro Tag) bereit.
+
+### Deliverables
+
+| # | Deliverable | Datei |
+|---|---|---|
+| D-S-10.1 | Historian-Interface (`append`, `readRaw`, `readProcessed`) | `lib/server/historian.js` |
+| D-S-10.2 | In-Memory-Ring-Buffer-Implementierung | idem |
+| D-S-10.3 | Disk-Storage (JSONL, rotating per day) | `lib/server/historian-disk.js` |
+| D-S-10.4 | Auto-Binding: `historizing=true` Variable → Historian-Writes | `lib/server/context-bridge.js` |
+| D-S-10.5 | Server `installHistoricalDataConfiguration` Integration | `nodes/server/opcua-server-config/opcua-server-config.js` |
+| D-S-10.6 | Integration-Test: Client liest HistoryRaw nach 10 Wertänderungen | `test/integration/historian.test.js` |
+
+### Akzeptanzkriterien
+
+- [ ] HistoryRead liefert bis zu N Werte mit korrekten Source- und Server-Timestamps
+- [ ] Ring-Buffer respektiert konfigurierbares Limit (Default 10 000 Samples pro Variable)
+- [ ] Disk-Storage rotiert zuverlässig bei Tageswechsel; kein Datenverlust
+- [ ] Speicherverbrauch wächst bei aktiviertem Ring-Buffer auch nach 24 h Dauerlast nicht unkontrolliert
+- [ ] HistoryRead auf Variable ohne `historizing` liefert `BadHistoryOperationUnsupported`
+
+---
+
+## WP-S-11: Events & Alarms (A&C)
+
+**Erfüllt:** Komfort-/Industrie-Anforderung Alarmmanagement  
+**Abhängigkeiten:** WP-S-2, WP-S-4  
+**Komplexität:** Sehr hoch  
+**Meilenstein:** M10
+
+### Ziel
+
+Der Server unterstützt die OPC UA Services Alarms & Conditions: generische Events auf Server-Objekt, Alarm-Bedingungen mit Acknowledge/Confirm und ein Audit-Kanal für Session- und Write-Operationen.
+
+### Deliverables
+
+| # | Deliverable | Datei |
+|---|---|---|
+| D-S-11.1 | Event-Emitter-Node `opcua-event` (löst generischen OPC UA Event aus) | `nodes/server/opcua-event/` |
+| D-S-11.2 | `AlarmConditionType` Wrapper inkl. Acknowledge/Confirm | `lib/server/alarm-manager.js` |
+| D-S-11.3 | Audit-Subscriber: wandelt Session-Create/Close/Write in Events | `lib/server/audit.js` |
+| D-S-11.4 | Konfigurationsblock im Server-Config für globales Audit-Enable | Server-Config HTML |
+| D-S-11.5 | Integration-Test: Alarm erzeugt, Client empfängt, `Acknowledge` ändert State | `test/integration/alarms.test.js` |
+| D-S-11.6 | Unit-Tests Alarm-State-Machine, Severity-Mapping | `lib/server/alarm-manager.test.js` |
+
+### Akzeptanzkriterien
+
+- [ ] Alarm mit `Severity > 500` erzeugt OPC UA Event, empfangbar durch echten OPC UA Client
+- [ ] `Acknowledge` ändert State korrekt (`Acked=true`), `Confirm` setzt `Confirmed=true`
+- [ ] Audit-Events enthalten Username und SessionId des Auslösers, aber keine Credentials
+- [ ] Audit lässt sich global ein- und ausschalten
+- [ ] Doppeltes Acknowledge auf bereits ackten Alarm wird ignoriert, wirft aber keine Exception
+
+---
+
 ## Abhängigkeitsmatrix
 
 ```
@@ -1026,11 +1405,18 @@ WP-C-1..5 ──────────────►WP-C-6
 WP-S-1 ──► WP-S-2 ──► WP-S-4
   │
   ├──────────────────────►WP-S-3
-  └──────────────────────►WP-S-5
+  └──────────────────────►WP-S-5 ──► WP-S-6
+                 WP-S-2 ──► WP-S-7 ──┐
+                                     ├──► WP-S-8
+                                     │
+                            WP-S-1 ──► WP-S-9
+                            WP-S-7 ──► WP-S-10
+                   WP-S-2 + WP-S-4 ──► WP-S-11
 ```
 
 **Kritischer Pfad Client**: WP-C-1 → WP-C-2 → WP-C-3 → WP-C-6  
-**Kritischer Pfad Server**: WP-S-1 → WP-S-2 → WP-S-4
+**Kritischer Pfad Server**: WP-S-1 → WP-S-2 → WP-S-4  
+**Server-Komfort-Pfad**: WP-S-5 → WP-S-6 → WP-S-7 → WP-S-8 → WP-S-9 → WP-S-10 / WP-S-11
 
 ---
 

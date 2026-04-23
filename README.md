@@ -28,6 +28,10 @@ This package fills the gap between outdated legacy OPC UA nodes and commercial e
 | M4 — RPC & Methods | Client Method-Call, Server-Methoden, Correlation-ID-Pattern | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
 | M5 — Visual UX & Security | Address-Space-Browser, PKI-Dashboard, Auto-Zertifikat, Server-PKI | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
 | M6 — Quality & Release | GitHub-Actions-CI, Coverage ≥ 85 %, Info-Sidebar, CHANGELOG, npm publish | WP-C-6 | ✅ Abgeschlossen |
+| M7 — Server Configuration Comfort | Security-/Auth-UI, Server-Identität, Ressourcen-Limits, erweiterte Variablen-Attribute | WP-S-6, WP-S-7 | ⬜ Offen |
+| M8 — Visual Server Modeling | Inline Address-Space-Editor, CSV/JSON-Bulk-Import, Variablen-Templates | WP-S-8 | ⬜ Offen |
+| M9 — Server Runtime Dashboard | Live-Sessions/Subscriptions, Uptime, Event-Log, manueller Neustart | WP-S-9 | ⬜ Offen |
+| M10 — Advanced OPC UA (Historian, A&C) | Historical Access, Events & Alarms, Auditing | WP-S-10, WP-S-11 | ⬜ Offen |
 
 > Details und Akzeptanzkriterien: [docs/milestones.md](docs/milestones.md)
 

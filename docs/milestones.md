@@ -17,6 +17,10 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | [M4 — RPC & Methods](#m4--rpc--methods) | Client Method-Call, Server-seitige Methoden mit Correlation-ID | WP-C-3 (Method), WP-S-4 | ✅ Abgeschlossen |
 | [M5 — Visual UX & Security](#m5--visual-ux--security) | Address Space Browser, PKI Dashboard, Server-Zertifikate | WP-C-4, WP-C-5, WP-S-5 | ✅ Abgeschlossen |
 | [M6 — Quality & Release](#m6--quality--release) | CI/CD, Coverage ≥ 85%, Dokumentation, npm publish | WP-C-6 | ✅ Abgeschlossen |
+| [M7 — Server Configuration Comfort](#m7--server-configuration-comfort) | Security-/Auth-UI, Server-Identität, Ressourcen-Limits, erweiterte Variablen-Attribute | WP-S-6, WP-S-7 | ⬜ Offen |
+| [M8 — Visual Server Modeling](#m8--visual-server-modeling) | Inline Address-Space-Editor, CSV/JSON-Bulk-Import, Variablen-Templates | WP-S-8 | ⬜ Offen |
+| [M9 — Server Runtime Dashboard](#m9--server-runtime-dashboard) | Live-Sessions/Subscriptions, Uptime, Event-Log, manueller Neustart | WP-S-9 | ⬜ Offen |
+| [M10 — Advanced OPC UA (Historian, A&C)](#m10--advanced-opc-ua-historian-ac) | Historical Access, Events & Alarms, Auditing | WP-S-10, WP-S-11 | ⬜ Offen |
 
 ---
 
@@ -224,6 +228,130 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 
 ---
 
+## M7 — Server Configuration Comfort
+
+**Ziel:** Der `opcua-server-config` Node kann produktionsnahe Server komplett über die UI konfigurieren — Security-Policies, Authentifizierungsmodi, Server-Identität, Ressourcen-Limits und erweiterte Variablen-Attribute. Kein Editieren von Code oder `settings.js` mehr nötig.
+
+**WPs:** WP-S-6, WP-S-7  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| Security-Policy-Multi-Select (None/Basic128Rsa15/Basic256/Basic256Sha256/Aes128_Sha256_RsaOaep/Aes256_Sha256_RsaPss) | `nodes/server/opcua-server-config/opcua-server-config.html` | ⬜ |
+| Security-Mode-Multi-Select (None/Sign/SignAndEncrypt) | idem | ⬜ |
+| Auth-Modi (Anonymous, Username, X509) + `allowAnonymous`-Toggle | idem | ⬜ |
+| User-Manager mit editierbarer Liste (Username/Passwort, optional Rolle) | `lib/server/user-manager.js` + UI | ⬜ |
+| Server-Identität: `applicationUri`, `manufacturerName`, `softwareVersion`, `buildNumber` | Server-Config | ⬜ |
+| Ressourcen-Limits: `maxSessions`, `maxSubscriptions`, `maxMonitoredItems`, `sessionTimeout` | Server-Config | ⬜ |
+| Endpoint-URL-Preview + Copy-to-Clipboard | Server-Config HTML | ⬜ |
+| Server-Zertifikat-Download-Button (`.der`) | Server-Config HTML + Route | ⬜ |
+| Erweiterte Variablen-Attribute: `accessLevel`, `userAccessLevel`, `historizing`, `valueRank`, EURange, EngineeringUnits | `nodes/server/opcua-variable/` | ⬜ |
+| Unit-Tests für User-Manager und erweiterte Variablen-Attribute | `lib/server/user-manager.test.js`, `opcua-variable.test.js` | ⬜ |
+
+### Akzeptanzkriterien M7
+
+- [ ] Mindestens zwei Endpoint-Security-Kombinationen gleichzeitig aktivierbar
+- [ ] `allowAnonymous=false` → anonymer Client wird abgewiesen (Integration-Test)
+- [ ] Username/Passwort-Login funktioniert Ende-zu-Ende (Integration-Test)
+- [ ] `sessionTimeout`, `maxSessions` werden an `OPCUAServer`-Options durchgereicht
+- [ ] Passwörter werden als Node-RED Credentials verschlüsselt gespeichert, nicht in `flows.json` im Klartext
+- [ ] Variable mit `accessLevel=CurrentRead` lehnt Schreibzugriff mit `BadUserAccessDenied` ab
+- [ ] Variable mit `historizing=true` wird im Server-Metadaten-Attribut `AccessLevelEx` korrekt gekennzeichnet
+- [ ] Server-Zertifikat-Download liefert exakt die Datei aus `PKI/own/certs/`
+
+---
+
+## M8 — Visual Server Modeling
+
+**Ziel:** Nutzer können Adressräume mit Dutzenden bis Hunderten Variablen bequem modellieren — per Inline-Tree-Editor im Server-Config-Dialog und per CSV/JSON-Bulk-Import. Variablen-Templates reduzieren Wiederholungen.
+
+**WPs:** WP-S-8  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| Inline Address-Space-Editor (`RED.treeList` basiert, editierbar) | `nodes/server/opcua-server-config/opcua-server-config.html` | ⬜ |
+| Persistenz des Tree-Models in Server-Config-Node-Properties | Server-Config Backend | ⬜ |
+| CSV-Import (Spalten: path, browseName, dataType, defaultValue, contextKey, accessLevel) | `lib/server/bulk-import.js` | ⬜ |
+| JSON-Import (gleicher Schema-Vorrat) | idem | ⬜ |
+| Variablen-Template-System (wiederverwendbare Struktur-Definition) | `lib/server/variable-template.js` | ⬜ |
+| Export der aktuellen Laufzeit-Struktur als JSON | HTTP-Route + UI-Button | ⬜ |
+| Unit-Tests für Bulk-Import und Template-Expansion | `lib/server/bulk-import.test.js`, `variable-template.test.js` | ⬜ |
+
+### Akzeptanzkriterien M8
+
+- [ ] Import einer CSV mit 1000 Tags erzeugt 1000 Variablen ohne manuelles Wiring
+- [ ] Ungültige Zeilen werden mit Zeilennummer und Fehlergrund gemeldet, Import bricht nicht ab
+- [ ] Tree-Editor speichert Änderungen in den Node-RED-Flow (persistent über Redeploy)
+- [ ] Template-basierte Variable wird bei Template-Änderung automatisch aktualisiert
+- [ ] Export-JSON kann wieder importiert werden (Round-Trip verlustfrei)
+- [ ] Doppelter `browseName` innerhalb desselben Parents wird beim Import abgewiesen
+
+---
+
+## M9 — Server Runtime Dashboard
+
+**Ziel:** Betreiber sehen jederzeit den Zustand des laufenden Servers — aktive Sessions, Subscriptions, Uptime, Event-Log — direkt im Node-RED Editor. Manueller Server-Neustart ohne Redeploy möglich.
+
+**WPs:** WP-S-9  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| Server-Diagnostics-Collector (Uptime, Session-/Subscription-Count, Read/Write/Call-Counter) | `lib/server/diagnostics.js` | ⬜ |
+| HTTP-Routen `GET /opcua-admin/server-status`, `GET /opcua-admin/server-sessions` | Server-Config | ⬜ |
+| Live-Status-Panel im Server-Config-Dialog mit Auto-Refresh | Server-Config HTML | ⬜ |
+| Event-Log-Ring-Buffer (letzte 200 Server-Events, clientseitig abrufbar) | `lib/server/event-log.js` | ⬜ |
+| Manueller Restart-Button (`POST /opcua-admin/server-restart`) | Server-Config | ⬜ |
+| `opcua-server-diagnostics` Node (emittiert msg auf Session-Connect/Disconnect/Fehler) | `nodes/server/opcua-server-diagnostics/` | ⬜ |
+| Unit-Tests für Diagnostics + Event-Log | `lib/server/diagnostics.test.js`, `event-log.test.js` | ⬜ |
+
+### Akzeptanzkriterien M9
+
+- [ ] Status-Panel zeigt Uptime und aktive Session-Anzahl mit ≤ 2 s Latenz
+- [ ] Restart-Button stoppt und startet den Server sauber (kein EADDRINUSE)
+- [ ] `opcua-server-diagnostics` emittiert `msg.payload.event = "sessionCreated"` bei Client-Connect
+- [ ] Event-Log enthält keine sensiblen Daten (keine Credentials, keine Zertifikat-Inhalte)
+- [ ] Diagnostics-Routen sind durch `RED.auth.needsPermission('opcua-server-config.read')` geschützt
+
+---
+
+## M10 — Advanced OPC UA (Historian, A&C)
+
+**Ziel:** Server unterstützt die OPC UA Services Historical Access (HA) und Alarms & Conditions (A&C). Für Industrie-Projekte mit Audit-Pflicht und Alarmmanagement relevant.
+
+**WPs:** WP-S-10, WP-S-11  
+**Status:** ⬜ Offen
+
+### Enthaltene Deliverables
+
+| Deliverable | Datei | Status |
+|---|---|---|
+| Historian-Backend (in-memory Ring-Buffer, pluggable Storage-Interface) | `lib/server/historian.js` | ⬜ |
+| `opcua-variable` mit `historizing=true` schreibt automatisch in den Historian | `opcua-variable.js` | ⬜ |
+| `HistoryRead`-Service-Unterstützung (Raw, Processed) | Server-Config Integration | ⬜ |
+| Disk-persistenter Historian-Storage (optional, JSON-Line-Files pro Tag) | `lib/server/historian-disk.js` | ⬜ |
+| `opcua-event` Node (Event-Emitter-Node für A&C) | `nodes/server/opcua-event/` | ⬜ |
+| A&C: `ConditionType`, `AlarmConditionType`, `acknowledge`/`confirm` | `lib/server/alarm-manager.js` | ⬜ |
+| Auditing: Session- und Write-Events als OPC UA Events | `lib/server/audit.js` | ⬜ |
+| Integration-Tests für HA-Read und Alarm-Generierung | `test/integration/historian.test.js`, `alarms.test.js` | ⬜ |
+
+### Akzeptanzkriterien M10
+
+- [ ] Historizing-Variable liefert bei `HistoryRead` die letzten N Werte mit korrekten Timestamps
+- [ ] Ring-Buffer respektiert konfigurierbares Limit (Default 10 000 Samples pro Variable)
+- [ ] Alarm mit `Severity > 500` erzeugt OPC UA Event, das von einem OPC UA Client empfangbar ist
+- [ ] `Acknowledge` auf Condition ändert State korrekt (`Acked=true`)
+- [ ] Audit-Events enthalten keine Credentials, aber Username und Session-Id des Auslösers
+
+---
+
 ## Session-Leitfaden für Agents
 
 **Vor jeder Session:**
@@ -257,6 +385,13 @@ M1 (Foundation)
          └──► M4 (RPC & Methods)
 M2 + M3 + M4 + M5
   └──────────────► M6 (Quality & Release)
+
+M1 + M3 + M5
+  └──────────────► M7 (Server Configuration Comfort)
+                     └──► M8 (Visual Server Modeling)
+                            └──► M9 (Server Runtime Dashboard)
+                                   └──► M10 (Advanced OPC UA — Historian, A&C)
 ```
 
-**Kritischer Pfad:** M1 → M2 → M4 → M6
+**Kritischer Pfad:** M1 → M2 → M4 → M6  
+**Server-Komfort-Pfad:** M1 → M3 → M5 → M7 → M8 → M9 → M10
