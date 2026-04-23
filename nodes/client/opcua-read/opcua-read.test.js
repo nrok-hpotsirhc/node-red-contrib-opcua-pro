@@ -127,7 +127,7 @@ describe('opcua-read', () => {
   });
 
   it('successful read sends msg with payload and opcua metadata', async () => {
-    const { Variant, DataType, StatusCodes } = require('node-opcua');
+    const { Variant, DataType } = require('node-opcua');
     const mockDataValue = {
       value:           new Variant({ dataType: DataType.Double, value: 42.0 }),
       statusCode:      { name: 'Good' },

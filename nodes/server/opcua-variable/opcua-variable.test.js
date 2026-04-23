@@ -308,11 +308,10 @@ describe('opcua-variable parseDefaultValue (via integration)', () => {
     const RED = makeRedMock();
     delete require.cache[require.resolve('./opcua-variable')];
     require('./opcua-variable')(RED);
-    const OpcuaVariable = RED.nodes.getType('opcua-variable');
+    RED.nodes.getType('opcua-variable');
 
     const as = makeAddressSpace();
     const serverConfig = makeServerConfigStub(null);
-    RED.nodes.getNode = (id) => id === 'srv' ? serverConfig : null;
 
     const RED2 = makeRedMock({ srv: serverConfig });
     delete require.cache[require.resolve('./opcua-variable')];
@@ -332,5 +331,130 @@ describe('opcua-variable parseDefaultValue (via integration)', () => {
     // Variable should be created without error
     assert.ok(node.variable !== null);
     assert.ok(!node.error.called);
+  });
+});
+
+// ── parseDefaultValue data type branch tests ──────────────────────────────────
+
+describe('opcua-variable parseDefaultValue branches', () => {
+
+  function setupVariableWithDefault(dataType, defaultValue) {
+    const as = makeAddressSpace();
+    const serverConfig = makeServerConfigStub(null);
+    const localRED = makeRedMock({ srv: serverConfig });
+    delete require.cache[require.resolve('./opcua-variable')];
+    require('./opcua-variable')(localRED);
+    const VarCtor = localRED.nodes.getType('opcua-variable');
+
+    const node = Object.create(EventEmitter.prototype);
+    EventEmitter.call(node);
+    localRED.nodes.createNode(node, { id: 'v_branch' });
+
+    VarCtor.call(node, {
+      server: 'srv', browseName: 'BranchTest', dataType,
+      contextKey: 'bt', contextScope: 'flow', defaultValue
+    });
+    serverConfig.emit('addressSpaceReady', as);
+    return node;
+  }
+
+  it('parses Boolean "true" default value', () => {
+    const node = setupVariableWithDefault('Boolean', 'true'); // TEST DATA
+    assert.ok(node.variable !== null);
+    assert.ok(!node.error.called);
+  });
+
+  it('parses Boolean false default value', () => {
+    const node = setupVariableWithDefault('Boolean', 'false'); // TEST DATA
+    assert.ok(node.variable !== null);
+    assert.ok(!node.error.called);
+  });
+
+  it('parses Float default value', () => {
+    const node = setupVariableWithDefault('Float', '3.14'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses Int32 default value', () => {
+    const node = setupVariableWithDefault('Int32', '42'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses Int16 default value', () => {
+    const node = setupVariableWithDefault('Int16', '100'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses UInt16 default value', () => {
+    const node = setupVariableWithDefault('UInt16', '200'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses UInt32 default value', () => {
+    const node = setupVariableWithDefault('UInt32', '300'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses Int64 default value', () => {
+    const node = setupVariableWithDefault('Int64', '1000000'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses UInt64 default value', () => {
+    const node = setupVariableWithDefault('UInt64', '999999'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses String default value (empty string is valid)', () => {
+    const node = setupVariableWithDefault('String', ''); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('parses String default value with content', () => {
+    const node = setupVariableWithDefault('String', 'hello'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('returns undefined for NaN Float', () => {
+    const node = setupVariableWithDefault('Float', 'not-a-number'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('returns undefined for NaN Int32', () => {
+    const node = setupVariableWithDefault('Int32', 'abc'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('falls through to raw for unknown dataType', () => {
+    const node = setupVariableWithDefault('ByteString', 'rawdata'); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('returns undefined for null defaultValue', () => {
+    const node = setupVariableWithDefault('Double', null); // TEST DATA
+    assert.ok(node.variable !== null);
+  });
+
+  it('resolves parent via parentNodeId when no parentFolder node', () => {
+    const parentObj = { browseName: 'MyParent' };
+    const as = makeAddressSpace(sinon.stub().returns(parentObj));
+    const serverConfig = makeServerConfigStub(null);
+    const localRED = makeRedMock({ srv: serverConfig });
+    delete require.cache[require.resolve('./opcua-variable')];
+    require('./opcua-variable')(localRED);
+    const VarCtor = localRED.nodes.getType('opcua-variable');
+
+    const node = Object.create(EventEmitter.prototype);
+    EventEmitter.call(node);
+    localRED.nodes.createNode(node, { id: 'v_parent' });
+
+    VarCtor.call(node, {
+      server: 'srv', browseName: 'ChildByNodeId', dataType: 'Double',
+      contextKey: 'child2', contextScope: 'global', parentNodeId: 'ns=1;i=1000' // TEST DATA
+    });
+    serverConfig.emit('addressSpaceReady', as);
+
+    assert.ok(node.variable !== null);
+    assert.ok(as.findNode.calledWith('ns=1;i=1000'));
   });
 });

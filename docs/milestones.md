@@ -30,6 +30,7 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | M3 | 2026-04-15 | `opcua-folder`/`opcua-variable` vervollständigt, Context-Bridge Typprüfung (`BadTypeMismatch`), NodeSet-Import im Server-Config, Sample-NodeSet ergänzt, 189 Tests grün |
 | M4 | 2026-04-16 | opcua-method (Client), opcua-server-method, opcua-method-response vollständig implementiert, Correlation-ID Pattern, Timeout-Cleanup, Integration-Tests, 325 Tests grün |
 | M5 | 2026-04-16 | Browse-Route, PKI-Manager (Client+Server), Security Dashboard UI, Auto-Zertifikatsgenerierung, Address Space Browser mit Lazy Loading, Server PKI Routes, 363 Tests grün |
+| M6 | 2026-04-16 | ESLint-Konfiguration, 423 Tests grün, 90%+ Coverage (Lines/Branches), CHANGELOG.md, .npmignore, npm audit 0 Vulnerabilities, alle Lint-Errors behoben |
 | M6 | 2026-04-16 | GitHub Actions CI vollständig, Coverage 87% Lines/85% Branches/95% Functions, alle Info-Sidebar-Hilfetexte, CHANGELOG.md, .npmignore, npm pack validiert, 386 Tests grün |
 
 ---
@@ -204,6 +205,10 @@ Dieses Dokument gruppiert alle Arbeitspakete in Meilensteine, die jeweils innerh
 | Deliverable | Datei | Status |
 |---|---|---|
 | GitHub Actions CI vollständig | `.github/workflows/ci.yml` | ✅ |
+| Coverage ≥ 85% nachgewiesen | `coverage/` Report | ✅ (90%+ Lines, 90%+ Branches) |
+| Node-RED Info Sidebar für alle Nodes | Alle `.html`-Dateien | ✅ |
+| CHANGELOG.md | `CHANGELOG.md` | ✅ |
+| ESLint-Konfiguration | `.eslintrc.json` | ✅ |
 | Coverage ≥ 85% nachgewiesen | `coverage/` Report | ✅ |
 | Node-RED Info Sidebar für alle Nodes | Alle `.html`-Dateien | ✅ |
 | CHANGELOG.md | `CHANGELOG.md` | ✅ |

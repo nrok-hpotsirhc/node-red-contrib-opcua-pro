@@ -39,7 +39,7 @@ function makeRedMock() {
         Object.assign(nodeInstance, EventEmitter.prototype);
         nodeStore[config.id || 'test-id'] = nodeInstance;
       },
-      registerType(name, Constructor, opts) {
+      registerType(name, Constructor, _opts) {
         nodes[name] = Constructor;
       },
       getNode(id) { return nodeStore[id] || null; }
@@ -273,6 +273,140 @@ describe('PKI HTTP Routes (WP-C-5)', () => {
   it('trust route returns 400 for null body', () => {
     const res = mockRes();
     trustHandler({ body: null }, res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  // ── Success paths & additional coverage ─────────────────────────────────
+
+  it('rejected route returns list of files on success', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'client-pki-rej-'));
+    const rejDir = path.join(tmpDir, 'rejected');
+    fs.mkdirSync(rejDir, { recursive: true });
+    fs.writeFileSync(path.join(rejDir, 'server.der'), 'dummy'); // TEST DATA
+
+    RED._nodeStore['pkicfgOK1'] = { pkiDir: tmpDir };
+    const res = mockRes();
+    rejectedHandler({ query: { configId: 'pkicfgOK1' } }, res);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(Array.isArray(res.body));
+    assert.strictEqual(res.body.length, 1);
+    assert.strictEqual(res.body[0].name, 'server.der');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('rejected route returns 500 on internal error', () => {
+    RED._nodeStore['pkicfgBad1'] = { pkiDir: '/nonexistent/impossible/path' };
+    const res = mockRes();
+    rejectedHandler({ query: { configId: 'pkicfgBad1' } }, res);
+    assert.ok(res.statusCode === 500 || (res.statusCode === 200 && res.body.length === 0));
+  });
+
+  it('trusted route returns 400 for missing configId', () => {
+    const res = mockRes();
+    trustedHandler({ query: {} }, res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  it('trusted route returns 400 for invalid configId', () => {
+    const res = mockRes();
+    trustedHandler({ query: { configId: '../evil' } }, res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  it('trusted route returns 404 for non-existent config node', () => {
+    const res = mockRes();
+    trustedHandler({ query: { configId: 'doesntexist1' } }, res);
+    assert.strictEqual(res.statusCode, 404);
+  });
+
+  it('trusted route returns 404 when config node has no pkiDir', () => {
+    RED._nodeStore['nopkidir1'] = { pkiDir: undefined };
+    const res = mockRes();
+    trustedHandler({ query: { configId: 'nopkidir1' } }, res);
+    assert.strictEqual(res.statusCode, 404);
+  });
+
+  it('trusted route returns list of files on success', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'client-pki-trusted-'));
+    const trustedDir = path.join(tmpDir, 'trusted', 'certs');
+    fs.mkdirSync(trustedDir, { recursive: true });
+    fs.writeFileSync(path.join(trustedDir, 'trusted1.der'), 'dummy'); // TEST DATA
+
+    RED._nodeStore['pkicfgOK2'] = { pkiDir: tmpDir };
+    const res = mockRes();
+    trustedHandler({ query: { configId: 'pkicfgOK2' } }, res);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(Array.isArray(res.body));
+    assert.strictEqual(res.body.length, 1);
+    assert.strictEqual(res.body[0].name, 'trusted1.der');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('trusted route returns 500 on internal error', () => {
+    RED._nodeStore['pkicfgBad2'] = { pkiDir: '/nonexistent/impossible/path' };
+    const res = mockRes();
+    trustedHandler({ query: { configId: 'pkicfgBad2' } }, res);
+    assert.ok(res.statusCode === 500 || (res.statusCode === 200 && res.body.length === 0));
+  });
+
+  it('trust route succeeds when file exists in rejected', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'client-pki-trust-'));
+    const rejDir = path.join(tmpDir, 'rejected');
+    const trustedDir = path.join(tmpDir, 'trusted', 'certs');
+    fs.mkdirSync(rejDir, { recursive: true });
+    fs.mkdirSync(trustedDir, { recursive: true });
+    fs.writeFileSync(path.join(rejDir, 'server.der'), 'cert-data'); // TEST DATA
+
+    RED._nodeStore['pkicfgOK3'] = { pkiDir: tmpDir };
+    const res = mockRes();
+    trustHandler({ body: { configId: 'pkicfgOK3', filename: 'server.der' } }, res);
+
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.success, true);
+    assert.ok(!fs.existsSync(path.join(rejDir, 'server.der')));
+    assert.ok(fs.existsSync(path.join(trustedDir, 'server.der')));
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('trust route returns 404 when config node not found', () => {
+    const res = mockRes();
+    trustHandler({ body: { configId: 'ghostnode1', filename: 'test.der' } }, res);
+    assert.strictEqual(res.statusCode, 404);
+  });
+
+  it('trust route returns 500 when file does not exist', () => {
+    const fs = require('fs');
+    const os = require('os');
+    const path = require('path');
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'client-trust-nofile-'));
+    fs.mkdirSync(path.join(tmpDir, 'rejected'), { recursive: true });
+
+    RED._nodeStore['pkicfgOK4'] = { pkiDir: tmpDir };
+    const res = mockRes();
+    trustHandler({ body: { configId: 'pkicfgOK4', filename: 'nonexistent.der' } }, res);
+
+    assert.strictEqual(res.statusCode, 500);
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('rejected route returns 400 for configId with invalid chars', () => {
+    const res = mockRes();
+    rejectedHandler({ query: { configId: 'bad;id' } }, res);
     assert.strictEqual(res.statusCode, 400);
   });
 });

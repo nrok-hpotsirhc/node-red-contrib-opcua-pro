@@ -6,7 +6,7 @@
 const { OPCUAServer } = require('node-opcua');
 const path = require('path');
 const { importNodeSets } = require('../../../lib/server/nodeset-importer');
-const { isValidConfigId, registerPkiRoutes } = require('../../../lib/http-helpers');
+const { registerPkiRoutes } = require('../../../lib/http-helpers');
 const {
   ensureServerCertificate,
   listRejectedClientCertificates,
@@ -37,7 +37,7 @@ module.exports = function (RED) {
     async function startServer() {
       // WP-S-5 (M5): Auto-generate server certificate
       const productName = config.productName || 'Node-RED OPC UA Server';
-      const serverPort  = parseInt(config.port) || 4840;
+      const serverPort  = parseInt(config.port, 10) || 4840;
       let certOpts = {};
       try {
         const { certFile, keyFile } = await ensureServerCertificate(
