@@ -2,12 +2,42 @@
   (function() {
     'use strict';
 
+    function eachNode(callback) {
+      if (RED.nodes && typeof RED.nodes.eachNode === 'function') {
+        RED.nodes.eachNode(callback);
+      }
+    }
+
+    function populateMethodNodes($select, currentValue) {
+      var items = [];
+      eachNode(function(node) {
+        if (node && node.type === 'opcua-server-method') {
+          items.push(node);
+        }
+      });
+      items.sort(function(a, b) {
+        var aLabel = String(a.name || a.methodName || a.id).toLowerCase();
+        var bLabel = String(b.name || b.methodName || b.id).toLowerCase();
+        return aLabel.localeCompare(bLabel);
+      });
+      $select.empty();
+      $select.append($('<option></option>').val('').text('Select method node'));
+      items.forEach(function(node) {
+        var label = node.name || node.methodName || node.id;
+        $select.append($('<option></option>').val(node.id).text(label + ' [' + node.id + ']'));
+      });
+      if (currentValue && !$select.find('option').filter(function() { return this.value === currentValue; }).length) {
+        $select.append($('<option></option>').val(currentValue).text(currentValue + ' [missing]'));
+      }
+      $select.val(currentValue || '');
+    }
+
     RED.nodes.registerType('opcua-method-response', {
       category: 'OPC UA',
       color: '#FDD0A2',
       defaults: {
         name:       { value: '' },
-        methodNode: { value: '', type: 'opcua-server-method', required: true }
+        methodNode: { value: '', required: true }
       },
       inputs: 1,
       outputs: 0,
@@ -16,7 +46,10 @@
         return this.name || 'opcua method response';
       },
       paletteLabel: 'opcua response',
-      align: 'right'
+      align: 'right',
+      oneditprepare: function() {
+        populateMethodNodes($('#node-input-methodNode'), this.methodNode);
+      }
     });
   }());
 </script>
@@ -28,7 +61,7 @@
   </div>
   <div class="form-row">
     <label for="node-input-methodNode"><i class="fa fa-cog"></i> Method Node</label>
-    <input type="text" id="node-input-methodNode">
+    <select id="node-input-methodNode"></select>
   </div>
 </script>
 

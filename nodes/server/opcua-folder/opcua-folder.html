@@ -2,6 +2,46 @@
   (function() {
     'use strict';
 
+    function eachNode(callback) {
+      if (RED.nodes && typeof RED.nodes.eachNode === 'function') {
+        RED.nodes.eachNode(callback);
+      }
+    }
+
+    function collectNodes(type, currentId, serverId) {
+      var items = [];
+      eachNode(function(node) {
+        if (!node || node.type !== type || node.id === currentId) {
+          return;
+        }
+        if (serverId && node.server && node.server !== serverId) {
+          return;
+        }
+        items.push(node);
+      });
+      items.sort(function(a, b) {
+        var aLabel = String(a.name || a.browseName || a.methodName || a.id).toLowerCase();
+        var bLabel = String(b.name || b.browseName || b.methodName || b.id).toLowerCase();
+        return aLabel.localeCompare(bLabel);
+      });
+      return items;
+    }
+
+    function populateNodeReference($select, type, options) {
+      var currentValue = options.value || '';
+      var nodes = collectNodes(type, options.currentId, options.serverId);
+      $select.empty();
+      $select.append($('<option></option>').val('').text(options.placeholder));
+      nodes.forEach(function(node) {
+        var label = node.name || node.browseName || node.methodName || node.id;
+        $select.append($('<option></option>').val(node.id).text(label + ' [' + node.id + ']'));
+      });
+      if (currentValue && !$select.find('option').filter(function() { return this.value === currentValue; }).length) {
+        $select.append($('<option></option>').val(currentValue).text(currentValue + ' [missing]'));
+      }
+      $select.val(currentValue);
+    }
+
     RED.nodes.registerType('opcua-folder', {
       category: 'OPC UA',
       color: '#C7E9C0',
@@ -11,7 +51,7 @@
         browseName: { value: '', required: true },
         nodeId: { value: '' },
         parentNodeId: { value: '' },
-        parentFolder: { value: '', type: 'opcua-folder' }
+        parentFolder: { value: '' }
       },
       inputs: 0,
       outputs: 0,
@@ -20,7 +60,24 @@
         return this.name || this.browseName || 'opcua folder';
       },
       paletteLabel: 'opcua folder',
-      align: 'left'
+      align: 'left',
+      oneditprepare: function() {
+        var node = this;
+        var $server = $('#node-input-server');
+        var $parentFolder = $('#node-input-parentFolder');
+
+        function refreshParentFolders() {
+          populateNodeReference($parentFolder, 'opcua-folder', {
+            currentId: node.id,
+            serverId: $server.val(),
+            value: $parentFolder.val() || node.parentFolder,
+            placeholder: 'Objects folder'
+          });
+        }
+
+        refreshParentFolders();
+        $server.on('change', refreshParentFolders);
+      }
     });
   }());
 </script>
@@ -44,7 +101,7 @@
   </div>
   <div class="form-row">
     <label for="node-input-parentFolder"><i class="fa fa-sitemap"></i> Parent Folder</label>
-    <input type="text" id="node-input-parentFolder" placeholder="Optional">
+    <select id="node-input-parentFolder"></select>
   </div>
   <div class="form-row">
     <label for="node-input-parentNodeId"><i class="fa fa-link"></i> Parent NodeId</label>

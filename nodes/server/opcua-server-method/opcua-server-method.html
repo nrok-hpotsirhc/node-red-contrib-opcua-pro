@@ -2,6 +2,24 @@
   (function() {
     'use strict';
 
+    function isRequiredPositiveInteger(value) {
+      if (value === '' || value === null || value === undefined) {
+        return false;
+      }
+      return /^\d+$/.test(String(value).trim()) && parseInt(value, 10) > 0;
+    }
+
+    function isOptionalJsonArray(value) {
+      if (value === '' || value === null || value === undefined) {
+        return true;
+      }
+      try {
+        return Array.isArray(JSON.parse(value));
+      } catch (_) {
+        return false;
+      }
+    }
+
     RED.nodes.registerType('opcua-server-method', {
       category: 'OPC UA',
       color: '#FDD0A2',
@@ -11,9 +29,9 @@
         methodName:      { value: '', required: true },
         nodeId:          { value: '' },
         parentNodeId:    { value: '' },
-        inputArguments:  { value: '[]' },
-        outputArguments: { value: '[]' },
-        timeoutMs:       { value: 10000 }
+        inputArguments:  { value: '[]', validate: isOptionalJsonArray },
+        outputArguments: { value: '[]', validate: isOptionalJsonArray },
+        timeoutMs:       { value: 10000, validate: isRequiredPositiveInteger }
       },
       inputs: 0,
       outputs: 1,
