@@ -104,7 +104,7 @@ module.exports = function (RED) {
           return;
         }
         attemptSubscriptionSetup('Subscription retry failed');
-      }, 2000);
+      }, 2000); // Retry after 2 seconds to avoid tight reconnect/setup loops.
       if (typeof retryTimer.unref === 'function') retryTimer.unref();
     }
 

@@ -79,13 +79,13 @@ describe('Client Reconnect (Integration)', () => {
         timeout = setTimeout(() => {
           cleanup();
           reject(new Error('Reconnect timeout'));
-        }, 15000); // TEST DATA
+        }, 15000); // TEST DATA — max wait for auto-reconnect before explicit fallback
         interval = setInterval(() => {
           if (client.isReconnecting === false) {
             cleanup();
             resolve();
           }
-        }, 250); // TEST DATA
+        }, 250); // TEST DATA — poll interval for client.isReconnecting during reconnect wait
         function onAfterReconnection() {
           cleanup();
           resolve();
