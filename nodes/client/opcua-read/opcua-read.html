@@ -3,7 +3,7 @@
     'use strict';
 
     // WP-C-4 (M5): Shared Address Space Browser helper for worker nodes
-    function opcuaBrowseDialog(targetInputId, connectionInputId) {
+    window.opcuaBrowseDialog = window.opcuaBrowseDialog || function opcuaBrowseDialog(targetInputId, connectionInputId) {
       var configId = $('#' + connectionInputId).val();
       if (!configId) {
         RED.notify('Please select a connection first', 'warning');
@@ -101,7 +101,7 @@
         ],
         close: function() { $(this).dialog('destroy').remove(); }
       });
-    }
+    };
 
     RED.nodes.registerType('opcua-read', {
       category:  'OPC UA',
@@ -121,7 +121,7 @@
       align: 'left',
       oneditprepare: function() {
         $('#opcua-read-browse-btn').on('click', function() {
-          opcuaBrowseDialog('node-input-nodeId', 'node-input-connection');
+          window.opcuaBrowseDialog('node-input-nodeId', 'node-input-connection');
         });
       }
     });

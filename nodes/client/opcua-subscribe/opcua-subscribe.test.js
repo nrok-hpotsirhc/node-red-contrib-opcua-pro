@@ -22,6 +22,7 @@
  */
 const assert = require('assert');
 const EventEmitter = require('events');
+const { DeadbandType } = require('node-opcua');
 
 // ── Mock Node-RED runtime ─────────────────────────────────────────────────
 function createMockRED() {
@@ -279,5 +280,32 @@ describe('opcua-subscribe', () => {
 
     assert.ok(closeDone, 'done() must still be called after terminate error');
     assert.strictEqual(node.subscription, null);
+  });
+
+  it('builds monitoring parameters with no deadband by default', () => {
+    const params = registerOpcuaSubscribe._internals.buildMonitoringParameters({
+      samplingInterval: 100, // TEST DATA
+      queueSize: 10, // TEST DATA
+      deadbandType: 'None' // TEST DATA
+    });
+
+    assert.strictEqual(params.samplingInterval, 100);
+    assert.strictEqual(params.queueSize, 10);
+    assert.strictEqual(params.filter, undefined);
+  });
+
+  it('builds monitoring parameters with configured deadband filter', () => {
+    const params = registerOpcuaSubscribe._internals.buildMonitoringParameters({
+      samplingInterval: 250, // TEST DATA
+      queueSize: 5, // TEST DATA
+      deadbandType: 'Absolute', // TEST DATA
+      deadbandValue: 1.5 // TEST DATA
+    });
+
+    assert.strictEqual(params.samplingInterval, 250);
+    assert.strictEqual(params.queueSize, 5);
+    assert.ok(params.filter, 'deadband filter must be created');
+    assert.strictEqual(params.filter.deadbandType, DeadbandType.Absolute);
+    assert.strictEqual(params.filter.deadbandValue, 1.5);
   });
 });
