@@ -52,6 +52,8 @@ module.exports = function (RED) {
     node.session        = null;
     node.scheduler      = null;
     node.subscriptions  = []; // Track active subscriptions for reactivation after reconnect
+    node.clientEventHandlers = null;
+    node.sessionClosedHandler = null;
 
     // WP-C-5 (M5): PKI directory — stores client certificates
     const userDir = RED.settings.userDir || process.cwd();
@@ -94,39 +96,44 @@ module.exports = function (RED) {
       });
 
       // ── node-opcua reconnect events → FSM transitions ──────────────────
-      node.client.on('connection_lost', () => {
-        if (node.fsm.state === 'SESSION_ACTIVE' || node.fsm.state === 'CONNECTED') {
-          try { node.fsm.transition('CONNECTION_LOST'); } catch (_) { /* guard */ }
-        }
-        node.warn('OPC UA connection lost — reconnect will start automatically');
-        // Destroy scheduler on disconnect (requests will fail anyway)
-        if (node.scheduler) {
-          node.scheduler.destroy();
-          node.scheduler = null;
-        }
-      });
+      node.clientEventHandlers = {
+        connection_lost: () => {
+          if (node.fsm.state === 'SESSION_ACTIVE' || node.fsm.state === 'CONNECTED') {
+            try { node.fsm.transition('CONNECTION_LOST'); } catch (_) { /* guard */ }
+          }
+          node.warn('OPC UA connection lost — reconnect will start automatically');
+          // Destroy scheduler on disconnect (requests will fail anyway)
+          if (node.scheduler) {
+            node.scheduler.destroy();
+            node.scheduler = null;
+          }
+        },
 
-      node.client.on('reconnecting', () => {
-        if (node.fsm.state === 'CONNECTION_LOST') {
-          try { node.fsm.transition('RECONNECTING'); } catch (_) { /* guard */ }
-        }
-      });
+        reconnecting: () => {
+          if (node.fsm.state === 'CONNECTION_LOST') {
+            try { node.fsm.transition('RECONNECTING'); } catch (_) { /* guard */ }
+          }
+        },
 
-      node.client.on('connection_reestablished', () => {
-        if (node.fsm.state === 'RECONNECTING' || node.fsm.state === 'CONNECTION_LOST') {
-          try { node.fsm.transition('CONNECTED'); } catch (_) { /* guard */ }
-        }
-        node.log('OPC UA connection re-established');
-      });
+        connection_reestablished: () => {
+          if (node.fsm.state === 'RECONNECTING' || node.fsm.state === 'CONNECTION_LOST') {
+            try { node.fsm.transition('CONNECTED'); } catch (_) { /* guard */ }
+          }
+          node.log('OPC UA connection re-established');
+        },
 
-      node.client.on('after_reconnection', async () => {
-        // WP-C-2: Attempt session re-establishment before creating a new one
-        try {
-          await activateSession();
-        } catch (err) {
-          node.warn(`Post-reconnect session activation failed: ${err.message}`);
+        after_reconnection: async () => {
+          // WP-C-2: Attempt session re-establishment before creating a new one
+          try {
+            await activateSession();
+          } catch (err) {
+            node.warn(`Post-reconnect session activation failed: ${err.message}`);
+          }
         }
-      });
+      };
+
+      Object.entries(node.clientEventHandlers)
+        .forEach(([event, handler]) => node.client.on(event, handler));
 
       await node.client.connect(config.endpoint);
       node.fsm.transition('CONNECTED');
@@ -138,19 +145,28 @@ module.exports = function (RED) {
         const userIdentity = getUserIdentity();
 
         // Remove stale session_closed listener from previous session to prevent accumulation
+        let previousSession = null;
         if (node.session) {
-          node.session.removeAllListeners('session_closed');
+          if (node.sessionClosedHandler) {
+            node.session.removeListener('session_closed', node.sessionClosedHandler);
+            node.sessionClosedHandler = null;
+          }
+          // Preserve node-opcua/internal listeners on the old session object; clearing
+          // node.session prevents accidental reuse until reestablishOrCreateSession returns.
+          previousSession = node.session;
+          node.session = null;
         }
 
         node.session = await reestablishOrCreateSession(
-          node.session, node.client, userIdentity
+          previousSession, node.client, userIdentity
         );
 
-        node.session.on('session_closed', () => {
+        node.sessionClosedHandler = () => {
           if (node.fsm.state === 'SESSION_ACTIVE') {
             try { node.fsm.transition('CONNECTION_LOST'); } catch (_) { /* guard */ }
           }
-        });
+        };
+        node.session.on('session_closed', node.sessionClosedHandler);
 
         // Create/recreate the BatchScheduler for the new/reactivated session
         if (node.scheduler) node.scheduler.destroy();
@@ -203,10 +219,19 @@ module.exports = function (RED) {
           node.scheduler = null;
         }
         if (node.session) {
+          if (node.sessionClosedHandler) {
+            node.session.removeListener('session_closed', node.sessionClosedHandler);
+            node.sessionClosedHandler = null;
+          }
           await node.session.close();
           node.session = null;
         }
         if (node.client) {
+          if (node.clientEventHandlers) {
+            Object.entries(node.clientEventHandlers)
+              .forEach(([event, handler]) => node.client.removeListener(event, handler));
+            node.clientEventHandlers = null;
+          }
           await node.client.disconnect();
           node.client = null;
         }
