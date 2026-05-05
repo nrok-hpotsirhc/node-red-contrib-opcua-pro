@@ -55,6 +55,7 @@ module.exports = function (RED) {
     node.configNode   = RED.nodes.getNode(config.connection);
     node.subscription = null;
     node.monitoredItem = null;
+    node.monitoredItemChangedHandler = null;
     let settingUp = false;
     let retryTimer = null;
     let closing = false;
@@ -79,6 +80,7 @@ module.exports = function (RED) {
     function onSubsReactivated({ expired }) {
       if (expired && expired.includes(node.subscription)) {
         // Our subscription expired during reconnect — recreate it
+        clearMonitoredItemListener();
         node.subscription = null;
         node.monitoredItem = null;
         if (node.configNode.fsm.state === 'SESSION_ACTIVE') {
@@ -96,13 +98,20 @@ module.exports = function (RED) {
       }
     }
 
+    function clearMonitoredItemListener() {
+      if (node.monitoredItem && node.monitoredItemChangedHandler) {
+        node.monitoredItem.removeListener('changed', node.monitoredItemChangedHandler);
+      }
+      node.monitoredItemChangedHandler = null;
+    }
+
     function scheduleSubscriptionRetry(message) {
       node.error(message);
       clearRetryTimer();
       if (closing) return;
       retryTimer = setTimeout(() => {
         retryTimer = null;
-        if (closing || node.subscription || node.configNode.fsm.state !== 'SESSION_ACTIVE') {
+        if (closing || settingUp || node.subscription || node.configNode.fsm.state !== 'SESSION_ACTIVE') {
           return;
         }
         attemptSubscriptionSetup('Subscription retry failed');
@@ -173,7 +182,7 @@ module.exports = function (RED) {
 
         node.monitoredItem = monitoredItem;
 
-        monitoredItem.on('changed', (dataValue) => {
+        node.monitoredItemChangedHandler = (dataValue) => {
           const normalized = normalizeDataValue(dataValue, nodeId);
           node.send({
             _msgid:  randomUUID(),
@@ -181,7 +190,8 @@ module.exports = function (RED) {
             opcua:   normalized.opcua,
             topic:   nodeId
           });
-        });
+        };
+        monitoredItem.on('changed', node.monitoredItemChangedHandler);
 
       } catch (err) {
         node.status({ fill: 'red', shape: 'ring', text: 'Sub failed' });
@@ -190,6 +200,7 @@ module.exports = function (RED) {
           try { await subscription.terminate(); } catch (_) { /* ignore cleanup errors */ }
         }
         if (node.subscription === subscription) {
+          clearMonitoredItemListener();
           node.subscription = null;
           node.monitoredItem = null;
         }
@@ -215,6 +226,7 @@ module.exports = function (RED) {
 
       if (node.subscription) {
         node.configNode.unregisterSubscription(node.subscription);
+        clearMonitoredItemListener();
         try {
           await node.subscription.terminate();
         } catch (_) { /* ignore cleanup errors */ }

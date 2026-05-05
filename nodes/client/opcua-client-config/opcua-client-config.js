@@ -53,6 +53,7 @@ module.exports = function (RED) {
     node.scheduler      = null;
     node.subscriptions  = []; // Track active subscriptions for reactivation after reconnect
     node.clientEventHandlers = null;
+    node.sessionClosedHandler = null;
 
     // WP-C-5 (M5): PKI directory — stores client certificates
     const userDir = RED.settings.userDir || process.cwd();
@@ -146,7 +147,10 @@ module.exports = function (RED) {
         // Remove stale session_closed listener from previous session to prevent accumulation
         let previousSession = null;
         if (node.session) {
-          node.session.removeAllListeners('session_closed');
+          if (node.sessionClosedHandler) {
+            node.session.removeListener('session_closed', node.sessionClosedHandler);
+            node.sessionClosedHandler = null;
+          }
           previousSession = node.session;
           node.session = null;
         }
@@ -155,11 +159,12 @@ module.exports = function (RED) {
           previousSession, node.client, userIdentity
         );
 
-        node.session.on('session_closed', () => {
+        node.sessionClosedHandler = () => {
           if (node.fsm.state === 'SESSION_ACTIVE') {
             try { node.fsm.transition('CONNECTION_LOST'); } catch (_) { /* guard */ }
           }
-        });
+        };
+        node.session.on('session_closed', node.sessionClosedHandler);
 
         // Create/recreate the BatchScheduler for the new/reactivated session
         if (node.scheduler) node.scheduler.destroy();
@@ -212,6 +217,10 @@ module.exports = function (RED) {
           node.scheduler = null;
         }
         if (node.session) {
+          if (node.sessionClosedHandler) {
+            node.session.removeListener('session_closed', node.sessionClosedHandler);
+            node.sessionClosedHandler = null;
+          }
           await node.session.close();
           node.session = null;
         }

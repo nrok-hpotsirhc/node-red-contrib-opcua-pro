@@ -73,29 +73,32 @@ describe('Client Reconnect (Integration)', () => {
       const reconnectPromise = new Promise((resolve, reject) => {
         let timeout;
         let interval;
+        let settled = false;
         function cleanup() {
           clearTimeout(timeout);
           clearInterval(interval);
           client.removeListener('after_reconnection', onAfterReconnection);
         }
-        timeout = setTimeout(() => {
+        function settle(fn) {
+          if (settled) return;
+          settled = true;
           cleanup();
-          reject(new Error('Reconnect timeout'));
+          fn();
+        }
+        timeout = setTimeout(() => {
+          settle(() => reject(new Error('Reconnect timeout')));
         }, RECONNECT_TIMEOUT_MS);
         interval = setInterval(() => {
           if (client.isReconnecting === false) {
-            cleanup();
-            resolve();
+            settle(resolve);
           }
         }, RECONNECT_POLL_INTERVAL_MS);
         function onAfterReconnection() {
-          cleanup();
-          resolve();
+          settle(resolve);
         }
         client.once('after_reconnection', onAfterReconnection);
         if (client.isReconnecting === false) {
-          cleanup();
-          resolve();
+          settle(resolve);
         }
       });
 
