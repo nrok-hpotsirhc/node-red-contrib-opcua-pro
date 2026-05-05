@@ -24,7 +24,6 @@ const { createMockServer } = require('../fixtures/mock-server');
 const TEST_PORT = 4843; // TEST DATA — integration-test mock server port
 const TIMEOUT   = 90_000; // TEST DATA — c8 coverage slows node-opcua reconnect timing
 const RECONNECT_TIMEOUT_MS = 15_000; // TEST DATA — max wait for auto-reconnect before explicit fallback
-const RECONNECT_POLL_INTERVAL_MS = 250; // TEST DATA — poll interval for client.isReconnecting
 
 describe('Client Reconnect (Integration)', () => {
 
@@ -72,11 +71,9 @@ describe('Client Reconnect (Integration)', () => {
       // be missed on fast machines or delayed under coverage instrumentation.
       const reconnectPromise = new Promise((resolve, reject) => {
         let timeout;
-        let interval;
         let settled = false;
         function cleanup() {
           clearTimeout(timeout);
-          clearInterval(interval);
           client.removeListener('after_reconnection', onAfterReconnection);
         }
         function settle(fn) {
@@ -88,11 +85,6 @@ describe('Client Reconnect (Integration)', () => {
         timeout = setTimeout(() => {
           settle(() => reject(new Error('Reconnect timeout')));
         }, RECONNECT_TIMEOUT_MS);
-        interval = setInterval(() => {
-          if (client.isReconnecting === false) {
-            settle(resolve);
-          }
-        }, RECONNECT_POLL_INTERVAL_MS);
         function onAfterReconnection() {
           settle(resolve);
         }

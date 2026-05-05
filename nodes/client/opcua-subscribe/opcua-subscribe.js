@@ -111,7 +111,10 @@ module.exports = function (RED) {
       if (closing) return;
       retryTimer = setTimeout(() => {
         retryTimer = null;
-        if (closing || settingUp || node.subscription || node.configNode.fsm.state !== 'SESSION_ACTIVE') {
+        if (closing) return;
+        if (settingUp) return;
+        if (node.subscription) return;
+        if (node.configNode.fsm.state !== 'SESSION_ACTIVE') {
           return;
         }
         attemptSubscriptionSetup('Subscription retry failed');
@@ -185,7 +188,7 @@ module.exports = function (RED) {
         node.monitoredItemChangedHandler = (dataValue) => {
           const normalized = normalizeDataValue(dataValue, nodeId);
           node.send({
-            _msgid:  randomUUID(),
+            _msgid:  RED.util?.generateId?.() || randomUUID(),
             payload: normalized.payload,
             opcua:   normalized.opcua,
             topic:   nodeId
