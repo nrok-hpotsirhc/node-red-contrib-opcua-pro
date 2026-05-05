@@ -16,6 +16,8 @@ const { randomUUID } = require('crypto');
 const { normalizeDataValue } = require('../../../lib/client/udt-deserializer');
 const { STATUS_MAP } = require('../../../lib/client/node-status');
 
+const SUBSCRIPTION_RETRY_DELAY_MS = 2000;
+
 function toPositiveInt(value, fallback) {
   const parsed = parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
@@ -104,7 +106,7 @@ module.exports = function (RED) {
           return;
         }
         attemptSubscriptionSetup('Subscription retry failed');
-      }, 2000); // Retry after 2 seconds to avoid tight reconnect/setup loops.
+      }, SUBSCRIPTION_RETRY_DELAY_MS); // Avoid tight reconnect/setup loops.
       if (typeof retryTimer.unref === 'function') retryTimer.unref();
     }
 
