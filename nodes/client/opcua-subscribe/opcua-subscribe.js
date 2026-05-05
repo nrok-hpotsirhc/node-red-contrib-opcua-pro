@@ -16,6 +16,7 @@ const { randomUUID } = require('crypto');
 const { normalizeDataValue } = require('../../../lib/client/udt-deserializer');
 const { STATUS_MAP } = require('../../../lib/client/node-status');
 
+// Prevents rapid retry cycles that could overwhelm the server or exhaust client resources.
 const SUBSCRIPTION_RETRY_DELAY_MS = 2000;
 
 function toPositiveInt(value, fallback) {
@@ -118,7 +119,7 @@ module.exports = function (RED) {
           return;
         }
         attemptSubscriptionSetup('Subscription retry failed');
-      }, SUBSCRIPTION_RETRY_DELAY_MS); // Avoid tight reconnect/setup loops.
+      }, SUBSCRIPTION_RETRY_DELAY_MS);
       if (typeof retryTimer.unref === 'function') retryTimer.unref();
     }
 

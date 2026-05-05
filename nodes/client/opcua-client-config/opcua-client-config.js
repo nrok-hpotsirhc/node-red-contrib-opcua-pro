@@ -151,7 +151,8 @@ module.exports = function (RED) {
             node.session.removeListener('session_closed', node.sessionClosedHandler);
             node.sessionClosedHandler = null;
           }
-          // Preserve node-opcua/internal listeners; this config node only owns sessionClosedHandler.
+          // Preserve node-opcua/internal listeners on the old session object; clearing
+          // node.session prevents accidental reuse until reestablishOrCreateSession returns.
           previousSession = node.session;
           node.session = null;
         }
